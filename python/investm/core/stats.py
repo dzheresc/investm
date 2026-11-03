@@ -11,7 +11,7 @@ def _check_same_size(x: Sequence[float], y: Sequence[float]) -> None:
 
 
 def mean(x: Sequence[float]) -> float:
-    if not x:
+    if len(x) == 0:
         raise ValueError("mean of empty sequence")
     return math.fsum(x) / len(x)
 
@@ -65,7 +65,7 @@ def autocorrelation(x: Sequence[float], lag: int) -> float:
 
 def geometric_mean_return(returns: Sequence[float]) -> float:
     """Compound per-period return: (prod(1 + r))^(1/T) - 1."""
-    if not returns:
+    if len(returns) == 0:
         raise ValueError("empty return series")
     if any(r <= -1.0 for r in returns):
         return -1.0

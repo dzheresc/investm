@@ -8,13 +8,13 @@ All code and explanations here are original. They implement the quantitative ide
 
 ```
 cpp/
-  core/                      root finding, statistics, console tables
+  core/                      root finding, statistics, linear algebra, OLS, tables
   chNN_<topic>/              one static library per chapter
     *.h, *.cc                library code (namespace investm::chNN)
     *_test.cc                GoogleTest unit tests
     examples_main.cc         worked examples -> chNN_examples binary
 python/
-  investm/core/              same helpers in Python
+  investm/core/              same helpers in Python (numpy from Chapter 6 on)
   investm/chNN_<topic>/      one package per chapter
     *.py, *_test.py          library code and unittest/pytest tests
     examples.py              python -m investm.chNN_<topic>.examples
@@ -27,7 +27,7 @@ Both implementations follow the [Google Style Guides](https://google.github.io/s
 ## Building and testing on Ubuntu
 
 ```bash
-sudo apt-get install -y build-essential cmake libgtest-dev python3 python3-pip valgrind
+sudo apt-get install -y build-essential cmake libgtest-dev python3 python3-numpy python3-pip valgrind
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build build -j
 ctest --test-dir build --output-on-failure      # unit tests + every examples binary
@@ -62,12 +62,12 @@ The container mounts `C:\develop` at `/develop`, so build outputs, valgrind repo
 | | 3 | Security markets: call auctions, spreads, commissions, price impact | done |
 | | 4 | Efficient markets: supply/demand schedules, event studies, random-walk tests | done |
 | | 5 | Riskless securities: YTM, spot/forward rates, bootstrapping, term-structure theories | done |
-| II. Portfolio analysis | 6 | Portfolio selection problem: utility, indifference curves, portfolio moments | planned |
-| | 7 | Portfolio analysis: Markowitz efficient set, market model, diversification | planned |
-| | 8 | Riskfree borrowing and lending | planned |
-| III. Equilibrium | 9 | CAPM: CML, SML, beta | planned |
-| | 10 | Factor models | planned |
-| | 11 | Arbitrage pricing theory | planned |
+| II. Portfolio analysis | 6 | Portfolio selection problem: utility, indifference curves, portfolio moments | done |
+| | 7 | Portfolio analysis: Markowitz efficient set, market model, diversification | done |
+| | 8 | Riskfree borrowing and lending | done |
+| III. Equilibrium | 9 | CAPM: CML, SML, beta | done |
+| | 10 | Factor models | done |
+| | 11 | Arbitrage pricing theory | done |
 | | 12 | Taxes and inflation | planned |
 | IV. Fixed income | 13 | Fixed-income securities | planned |
 | | 14 | Bond analysis: duration, convexity, valuation | planned |
