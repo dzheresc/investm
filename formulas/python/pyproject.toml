@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "investm-formulas"
+version = "0.1.0"
+description = "Investment Management Equations from Sharpe, Alexander and Bailey"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["investm_formulas"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
