@@ -45,6 +45,9 @@ class Matrix {
   std::span<const double> RowSpan(std::size_t r) const {
     return {data_.data() + r * cols_, cols_};
   }
+  std::span<double> RowSpan(std::size_t r) {
+    return {data_.data() + r * cols_, cols_};
+  }
 
   Vector Row(std::size_t r) const;
   Vector Column(std::size_t c) const;

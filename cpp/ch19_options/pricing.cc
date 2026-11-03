@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <limits>
 #include <vector>
 
 #include "cpp/core/check.h"
@@ -15,6 +17,49 @@ void CheckSpec(const OptionSpec& s) {
   INVESTM_CHECK(s.spot > 0.0 && s.strike > 0.0, "prices must be positive");
   INVESTM_CHECK(s.volatility > 0.0, "volatility must be positive");
   INVESTM_CHECK(s.years > 0.0, "time to expiry must be positive");
+}
+
+// E[payoff] at expiry of an n-step tree with up factor u and risk-neutral
+// probability p, before discounting. Without early exercise, backward
+// induction collapses to this sum over the terminal nodes with binomial
+// weights C(n, j) p^j (1 - p)^(n - j): O(n) instead of O(n^2).
+//
+// The weights are built by ratios outward from the mode, where the largest
+// weight is set to 1, and the sum is divided by the total weight. That
+// needs no factorials or powers, so nothing overflows; each tail stops when
+// its weight drops below the smallest normal double.
+double EuropeanBinomialExpectation(OptionType type, double strike, double spot,
+                                   std::size_t n, double u, double p) {
+  const double odds = p / (1.0 - p);
+  const double u2 = u * u;
+  const auto mode =
+      std::min(n, static_cast<std::size_t>(static_cast<double>(n + 1) * p));
+  const double s_mode =
+      spot *
+      std::exp((2.0 * static_cast<double>(mode) - static_cast<double>(n)) *
+               std::log(u));
+  constexpr double kTiny = std::numeric_limits<double>::min();
+  double total_weight = 1.0;
+  double total_value = Payoff(type, strike, s_mode);
+  double w = 1.0;
+  double s = s_mode;
+  for (std::size_t j = mode; j < n; ++j) {  // Node j -> j + 1.
+    w *= odds * static_cast<double>(n - j) / static_cast<double>(j + 1);
+    if (w < kTiny) break;
+    s *= u2;
+    total_weight += w;
+    total_value += w * Payoff(type, strike, s);
+  }
+  w = 1.0;
+  s = s_mode;
+  for (std::size_t j = mode; j > 0; --j) {  // Node j -> j - 1.
+    w *= static_cast<double>(j) / (odds * static_cast<double>(n - j + 1));
+    if (w < kTiny) break;
+    s /= u2;
+    total_weight += w;
+    total_value += w * Payoff(type, strike, s);
+  }
+  return total_value / total_weight;
 }
 
 }  // namespace
@@ -41,9 +86,14 @@ double BinomialPrice(const OptionSpec& spec, int steps, bool american) {
   INVESTM_CHECK(p > 0.0 && p < 1.0, "too few steps for these parameters");
   const double disc = std::exp(-spec.rate * dt);
   const auto n = static_cast<std::size_t>(steps);
+  if (!american) {
+    return std::exp(-spec.rate * spec.years) *
+           EuropeanBinomialExpectation(spec.type, spec.strike, spec.spot, n, u,
+                                       p);
+  }
   // With d = 1/u the price at node (i, j) is S u^(2j - i), so stepping back
   // one level multiplies every price by u. Only the O(n) terminal prices
-  // use pow; the O(n^2) backward pass for early exercise is multiplications.
+  // use exp; the O(n^2) backward pass is multiplications.
   std::vector<double> s(n + 1);
   std::vector<double> v(n + 1);
   const double log_u = std::log(u);
@@ -55,15 +105,23 @@ double BinomialPrice(const OptionSpec& spec, int steps, bool american) {
   }
   const double pu = disc * p;
   const double pd = disc * (1.0 - p);
-  for (std::size_t i = n; i-- > 0;) {
-    if (american) {
+  const double k = spec.strike;
+  // The continuation value is never negative, so max(hold, S - K) is the
+  // same as max(hold, max(S - K, 0)). Branching on the type outside the
+  // loops keeps the inner loop free of calls and of a per-node branch.
+  if (spec.type == OptionType::kCall) {
+    for (std::size_t i = n; i-- > 0;) {
       for (std::size_t j = 0; j <= i; ++j) {
         s[j] *= u;
-        v[j] = std::max(pu * v[j + 1] + pd * v[j],
-                        Payoff(spec.type, spec.strike, s[j]));
+        v[j] = std::max(pu * v[j + 1] + pd * v[j], s[j] - k);
       }
-    } else {
-      for (std::size_t j = 0; j <= i; ++j) v[j] = pu * v[j + 1] + pd * v[j];
+    }
+  } else {
+    for (std::size_t i = n; i-- > 0;) {
+      for (std::size_t j = 0; j <= i; ++j) {
+        s[j] *= u;
+        v[j] = std::max(pu * v[j + 1] + pd * v[j], k - s[j]);
+      }
     }
   }
   return v[0];

@@ -1,6 +1,8 @@
 #include "cpp/ch19_options/pricing.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -31,6 +33,55 @@ TEST(BinomialTest, ConvergesToBlackScholes) {
     const OptionSpec s = Spec(type);
     EXPECT_NEAR(BinomialPrice(s, 2000, false), BlackScholesPrice(s), 5e-3);
   }
+}
+
+// Plain backward induction over the whole tree, the definition the O(n)
+// European pricer must reproduce.
+double TreeByBackwardInduction(const OptionSpec& spec, int steps) {
+  const double dt = spec.years / steps;
+  const double u = std::exp(spec.volatility * std::sqrt(dt));
+  const double d = 1.0 / u;
+  const double p =
+      (std::exp((spec.rate - spec.dividend_yield) * dt) - d) / (u - d);
+  const double disc = std::exp(-spec.rate * dt);
+  std::vector<double> v(static_cast<std::size_t>(steps) + 1);
+  for (int j = 0; j <= steps; ++j) {
+    const double s = spec.spot * std::pow(u, 2 * j - steps);
+    v[static_cast<std::size_t>(j)] = spec.type == OptionType::kCall
+                                         ? std::max(s - spec.strike, 0.0)
+                                         : std::max(spec.strike - s, 0.0);
+  }
+  for (int i = steps; i-- > 0;) {
+    for (int j = 0; j <= i; ++j) {
+      const auto k = static_cast<std::size_t>(j);
+      v[k] = disc * (p * v[k + 1] + (1.0 - p) * v[k]);
+    }
+  }
+  return v[0];
+}
+
+TEST(BinomialTest, EuropeanMatchesBackwardInduction) {
+  for (OptionType type : {OptionType::kCall, OptionType::kPut}) {
+    for (const double strike : {60.0, 95.0, 100.0, 140.0}) {
+      for (const int steps : {1, 2, 7, 50, 501, 1200}) {
+        OptionSpec s = Spec(type);
+        s.strike = strike;
+        s.dividend_yield = 0.015;
+        const double expected = TreeByBackwardInduction(s, steps);
+        EXPECT_NEAR(BinomialPrice(s, steps, false), expected,
+                    1e-11 * (1.0 + expected))
+            << "strike " << strike << " steps " << steps;
+      }
+    }
+  }
+}
+
+TEST(BinomialTest, EuropeanFarOutOfTheMoneyIsTinyButNotNegative) {
+  OptionSpec s = Spec(OptionType::kCall);
+  s.strike = 1000.0;
+  const double v = BinomialPrice(s, 3000, false);
+  EXPECT_GE(v, 0.0);
+  EXPECT_LT(v, 1e-12);
 }
 
 TEST(BinomialTest, AmericanOptions) {

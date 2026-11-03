@@ -60,6 +60,18 @@ def binomial_price(spec: OptionSpec, steps: int, american: bool) -> float:
         raise ValueError("too few steps for these parameters")
     disc = math.exp(-spec.rate * dt)
     sign = 1.0 if spec.option_type == OptionType.CALL else -1.0
+    if not american:
+        # Backward induction collapses to the terminal payoffs weighted by
+        # C(n, j) p^j (1 - p)^(n - j): O(n) instead of O(n^2). The weights
+        # are built in logs (cumulative ratios), so nothing underflows.
+        j = np.arange(1, steps + 1)
+        log_w = np.concatenate(
+            ([steps * math.log1p(-p)], steps * math.log1p(-p) +
+             np.cumsum(np.log((steps - j + 1) / j) + math.log(p / (1 - p)))))
+        s = spec.spot * u**(2.0 * np.arange(steps + 1) - steps)
+        payoff = np.maximum(sign * (s - spec.strike), 0.0)
+        return float(
+            math.exp(-spec.rate * spec.years) * (np.exp(log_w) @ payoff))
     # Node (i, j) has price S u^(2j - i): one step back multiplies by u, so
     # the early-exercise check reuses the terminal prices without powers.
     s = spec.spot * u**(2.0 * np.arange(steps + 1) - steps)

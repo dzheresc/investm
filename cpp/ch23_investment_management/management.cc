@@ -18,6 +18,16 @@ void Grow(double wealth, double weight, double r, double rf, double* new_wealth,
   *drifted_weight = *new_wealth != 0.0 ? risky / *new_wealth : 0.0;
 }
 
+// Sizes both series for the whole path up front, so a simulation does two
+// allocations instead of one per doubling of each vector.
+StrategyPath StartPath(std::size_t periods, double initial_wealth) {
+  StrategyPath p;
+  p.wealth.reserve(periods + 1);
+  p.risky_weight.reserve(periods);
+  p.wealth.push_back(initial_wealth);
+  return p;
+}
+
 }  // namespace
 
 double ImpliedRiskTolerance(double stock_weight, double stock_expected,
@@ -36,14 +46,13 @@ double OptimalStockWeight(double tau, double stock_expected,
 
 StrategyPath BuyAndHold(std::span<const double> risky_returns, double riskfree,
                         double initial_weight, double initial_wealth) {
-  StrategyPath p;
-  p.wealth.push_back(initial_wealth);
+  StrategyPath p = StartPath(risky_returns.size(), initial_wealth);
+  double wealth = initial_wealth;
   double w = initial_weight;
   for (double r : risky_returns) {
     p.risky_weight.push_back(w);
-    double next = 0.0;
-    Grow(p.wealth.back(), w, r, riskfree, &next, &w);
-    p.wealth.push_back(next);
+    Grow(wealth, w, r, riskfree, &wealth, &w);
+    p.wealth.push_back(wealth);
   }
   return p;
 }
@@ -52,18 +61,19 @@ StrategyPath ConstantMix(std::span<const double> risky_returns, double riskfree,
                          double target_weight, double band,
                          double initial_wealth) {
   INVESTM_CHECK(band >= 0.0, "band must be non-negative");
-  StrategyPath p;
-  p.wealth.push_back(initial_wealth);
+  StrategyPath p = StartPath(risky_returns.size(), initial_wealth);
+  double wealth = initial_wealth;
   double w = target_weight;
+  bool first = true;
   for (double r : risky_returns) {
-    if (!p.risky_weight.empty() && std::abs(w - target_weight) > band) {
+    if (!first && std::abs(w - target_weight) > band) {
       p.turnover += std::abs(w - target_weight);
       w = target_weight;
     }
+    first = false;
     p.risky_weight.push_back(w);
-    double next = 0.0;
-    Grow(p.wealth.back(), w, r, riskfree, &next, &w);
-    p.wealth.push_back(next);
+    Grow(wealth, w, r, riskfree, &wealth, &w);
+    p.wealth.push_back(wealth);
   }
   return p;
 }
@@ -74,21 +84,21 @@ StrategyPath Cppi(std::span<const double> risky_returns, double riskfree,
   INVESTM_CHECK(multiplier >= 0.0, "multiplier must be non-negative");
   INVESTM_CHECK(floor_fraction >= 0.0 && floor_fraction <= 1.0,
                 "floor fraction in [0, 1]");
-  StrategyPath p;
-  p.wealth.push_back(initial_wealth);
+  StrategyPath p = StartPath(risky_returns.size(), initial_wealth);
+  double wealth = initial_wealth;
   double floor = floor_fraction * initial_wealth;
   double drifted = 0.0;
+  bool first = true;
   for (double r : risky_returns) {
-    const double wealth = p.wealth.back();
     const double cushion = std::max(wealth - floor, 0.0);
     const double w = wealth > 0.0 ? std::clamp(multiplier * cushion / wealth,
                                                0.0, max_weight)
                                   : 0.0;
-    if (!p.risky_weight.empty()) p.turnover += std::abs(w - drifted);
+    if (!first) p.turnover += std::abs(w - drifted);
+    first = false;
     p.risky_weight.push_back(w);
-    double next = 0.0;
-    Grow(wealth, w, r, riskfree, &next, &drifted);
-    p.wealth.push_back(next);
+    Grow(wealth, w, r, riskfree, &wealth, &drifted);
+    p.wealth.push_back(wealth);
     floor *= 1.0 + riskfree;
   }
   return p;

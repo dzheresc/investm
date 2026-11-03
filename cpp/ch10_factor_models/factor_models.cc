@@ -48,15 +48,18 @@ std::optional<FactorModel> EstimateTimeSeries(const Matrix& returns,
                 "returns and factors cover different periods");
   const std::size_t n = returns.cols();
   const std::size_t k = factors.cols();
+  // Every security is regressed on the same factors, so (X'X)^-1 is
+  // computed once rather than once per security.
+  const auto design = OlsDesign::Create(factors);
+  if (!design.has_value()) return std::nullopt;
   FactorModel model{Vector(n), Matrix(n, k), Vector(n)};
   for (std::size_t i = 0; i < n; ++i) {
-    const auto fit = MultipleOls(factors, returns.Column(i));
-    if (!fit.has_value()) return std::nullopt;
-    model.intercepts[i] = fit->coefficients[0];
+    const LinearRegression fit = design->Fit(returns.Column(i));
+    model.intercepts[i] = fit.coefficients[0];
     for (std::size_t j = 0; j < k; ++j) {
-      model.sensitivities(i, j) = fit->coefficients[j + 1];
+      model.sensitivities(i, j) = fit.coefficients[j + 1];
     }
-    model.residual_variances[i] = fit->residual_std_dev * fit->residual_std_dev;
+    model.residual_variances[i] = fit.residual_std_dev * fit.residual_std_dev;
   }
   return model;
 }

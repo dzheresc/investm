@@ -5,6 +5,7 @@ import unittest
 import numpy as np
 
 from investm.ch10_factor_models import factor_models as fm
+from investm.core import regression
 
 
 def _model() -> fm.FactorModel:
@@ -34,6 +35,22 @@ class FactorModelTest(unittest.TestCase):
         np.testing.assert_allclose(fit.sensitivities,
                                    m.sensitivities,
                                    atol=0.05)
+
+    def test_time_series_matches_per_security_ols(self):
+        rng = np.random.default_rng(6)
+        f = rng.standard_normal((60, 3))
+        r = rng.standard_normal((60, 7))
+        fit = fm.estimate_time_series(r, f)
+        for i in range(7):
+            one = regression.multiple_ols(f, r[:, i])
+            self.assertAlmostEqual(fit.intercepts[i], one.coefficients[0], 12)
+            np.testing.assert_allclose(fit.sensitivities[i],
+                                       one.coefficients[1:],
+                                       atol=1e-12)
+            self.assertAlmostEqual(fit.residual_variances[i],
+                                   one.residual_std_dev**2, 12)
+        collinear = np.column_stack([f[:, 0], 2 * f[:, 0]])
+        self.assertIsNone(fm.estimate_time_series(r, collinear))
 
     def test_cross_sectional(self):
         attrs = np.array([[0.5], [1.0], [1.5], [2.0]])

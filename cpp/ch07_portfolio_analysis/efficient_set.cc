@@ -90,12 +90,44 @@ Vector ProjectOntoSimplex(std::span<const double> v) {
 }
 
 AffineSimplexProjector::AffineSimplexProjector(std::span<const double> a)
-    : a_(a.begin(), a.end()) {
+    : a_(a.begin(), a.end()), keys_(a.size()) {
   INVESTM_CHECK(!a_.empty(), "empty constraint vector");
   INVESTM_CHECK(
       std::any_of(a_.begin(), a_.end(), [](double x) { return x > 0.0; }),
       "a'z = 1 with z >= 0 needs some a_i > 0");
-  breakpoints_.reserve(a_.size());
+  order_.reserve(a_.size());
+  for (std::size_t i = 0; i < a_.size(); ++i) {
+    if (a_[i] != 0.0) order_.push_back(i);
+  }
+}
+
+void AffineSimplexProjector::SortBreakpoints() {
+  const auto less = [this](std::size_t i, std::size_t j) {
+    return keys_[i] < keys_[j] || (keys_[i] == keys_[j] && i < j);
+  };
+  if (!sorted_before_) {
+    std::sort(order_.begin(), order_.end(), less);
+    sorted_before_ = true;
+    return;
+  }
+  // A budget of a few shifts per element keeps the worst case at
+  // O(n log n): past it, std::sort takes over from the partial result.
+  const std::size_t budget = 8 * order_.size() + 64;
+  std::size_t shifts = 0;
+  for (std::size_t k = 1; k < order_.size(); ++k) {
+    const std::size_t idx = order_[k];
+    std::size_t pos = k;
+    while (pos > 0 && less(idx, order_[pos - 1]) && shifts <= budget) {
+      order_[pos] = order_[pos - 1];
+      --pos;
+      ++shifts;
+    }
+    order_[pos] = idx;
+    if (shifts > budget) {
+      std::sort(order_.begin(), order_.end(), less);
+      return;
+    }
+  }
 }
 
 void AffineSimplexProjector::Project(std::span<const double> v,
@@ -107,21 +139,22 @@ void AffineSimplexProjector::Project(std::span<const double> v,
   // g = S1 - theta S2 with S1 = sum a_i v_i, S2 = sum a_i^2 over it. At
   // theta = -inf the active set is {a_i > 0}; crossing b_i = v_i / a_i
   // removes i if a_i > 0 and adds it if a_i < 0.
-  breakpoints_.clear();
   double s1 = 0.0;
   double s2 = 0.0;
+  // Index order (not order_) keeps the sums identical from call to call.
   for (std::size_t i = 0; i < n; ++i) {
     if (a_[i] == 0.0) continue;
-    breakpoints_.emplace_back(v[i] / a_[i], i);
+    keys_[i] = v[i] / a_[i];
     if (a_[i] > 0.0) {
       s1 += a_[i] * v[i];
       s2 += a_[i] * a_[i];
     }
   }
-  std::sort(breakpoints_.begin(), breakpoints_.end());
+  SortBreakpoints();
   double theta = 0.0;
   bool found = false;
-  for (const auto& [b, i] : breakpoints_) {
+  for (std::size_t i : order_) {
+    const double b = keys_[i];
     if (s1 - b * s2 <= 1.0) {  // Root lies left of b, in a linear piece.
       theta = s2 > 0.0 ? (s1 - 1.0) / s2 : b;
       found = true;

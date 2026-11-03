@@ -175,6 +175,12 @@ std::vector<Case> MakeCases() {
            DoNotOptimize(
                ch10::EstimatePrincipalComponents(r, 3).explained_fraction);
          }});
+    const Matrix f = RandomMatrix(250, 3, 10);
+    cases.push_back(
+        {"ch10/time_series/250x100x3", [=] {
+           DoNotOptimize(
+               ch10::EstimateTimeSeries(r, f)->residual_variances.back());
+         }});
   }
 
   // --- ch13/ch14 bonds -----------------------------------------------------
@@ -201,7 +207,7 @@ std::vector<Case> MakeCases() {
   {
     const ch19::OptionSpec put{
         ch19::OptionType::kPut, 100.0, 105.0, 0.05, 0.3, 1.0, 0.01};
-    for (int steps : {100, 1000}) {
+    for (int steps : {100, 1000, 2000}) {
       const std::string s = std::to_string(steps);
       cases.push_back({"ch19/binomial_european/" + s, [=] {
                          DoNotOptimize(ch19::BinomialPrice(put, steps, false));
@@ -228,6 +234,10 @@ std::vector<Case> MakeCases() {
     cases.push_back({"ch23/cppi/120", [=] {
                        DoNotOptimize(
                            ch23::Cppi(path, 0.003, 3.0, 0.8).wealth.back());
+                     }});
+    cases.push_back({"ch23/buy_and_hold/120", [=] {
+                       DoNotOptimize(
+                           ch23::BuyAndHold(path, 0.003, 0.6).wealth.back());
                      }});
     cases.push_back(
         {"ch23/constant_mix/120", [=] {

@@ -21,7 +21,8 @@ python/
 docs/chNN_<topic>.md         section-by-section map and notes for both languages
 cpp/bench/                   benchmark driver (investm_bench) for the hot paths
 scripts/                     check.sh (CI checks), profile.sh (valgrind suite),
-                             bench_python.py (Python timings)
+                             callgrind_cases.py (per-case table), docker_profile.ps1
+                             (Windows wrapper), bench_python.py (Python timings)
 docs/performance.md          benchmark and profiling results
 docker/Dockerfile            Ubuntu 24.04 toolchain (gcc, cmake, gtest, valgrind, python)
 ```
@@ -61,12 +62,14 @@ The container mounts `C:\develop` at `/develop`, so build outputs, valgrind repo
 
 ```bash
 ./build/cpp/bench/investm_bench                      # all cases; --filter=ch08 --csv=out.csv
-scripts/profile.sh                                   # memcheck, callgrind, cachegrind, massif, DHAT
+scripts/profile.sh                                   # memcheck, callgrind, cachegrind, massif, DHAT, chapters, cases
 FILTER=ch07 scripts/profile.sh callgrind             # one tool, selected cases
+scripts/profile.sh chapters                          # callgrind over every chapter's examples and tests
+BASELINE=old/cases scripts/profile.sh cases          # per-case instructions and cache misses, compared
 python3 scripts/bench_python.py                      # Python timings
 ```
 
-On Windows: `docker run --rm -it -v C:\develop:/develop -w /develop/investm investm-dev scripts/profile.sh`. Reports are written to `build/profile/reports` (for example `C:\develop\investm\build\profile\reports`). [docs/performance.md](docs/performance.md) has the before and after numbers from the profiling round, what valgrind found, and the fixes.
+On Windows: `powershell -File scripts\docker_profile.ps1` (optionally followed by tool names). It builds the image and runs `docker run --rm -v C:\develop:/develop -w /develop/investm investm-dev scripts/profile.sh`. Reports are written to `build/profile/reports` (for example `C:\develop\investm\build\profile\reports`). [docs/performance.md](docs/performance.md) has the before and after numbers from the profiling round, what valgrind found, and the fixes.
 
 ## Chapter map
 
