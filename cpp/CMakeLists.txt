@@ -1,0 +1,6 @@
+add_subdirectory(core)
+add_subdirectory(ch01_introduction)
+add_subdirectory(ch02_buying_and_selling)
+add_subdirectory(ch03_security_markets)
+add_subdirectory(ch04_efficient_markets)
+add_subdirectory(ch05_riskless_securities)
