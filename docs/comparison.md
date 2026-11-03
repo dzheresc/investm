@@ -10,10 +10,13 @@ are exact (rational arithmetic) or computed to 50 digits with mpmath, so the
 error column is each library's own error, not a difference between two
 libraries.
 
-Everything here ran in the cloud container. A second round closed the
-speed gaps the first one found; see [Gaps closed](#gaps-closed). Rows for
-code that changed are from the second run; the other rows are from the
-first, and the fresh JSON agrees with them within the container's noise.
+The C++ tables ran in the cloud container and the Python tables on a desktop
+in Docker, with the processes pinned (see [Setup](#setup)). Close Python
+cases ranked differently on the two machines, so treat a gap of a few
+percent as a tie. A second round closed the speed gaps the first one found;
+see [Gaps closed](#gaps-closed). In the C++ tables, rows for code that
+changed are from the second run; the other rows are from the first, and the
+fresh JSON agrees with them within the container's noise.
 
 ## Summary
 
@@ -37,17 +40,19 @@ first, and the fresh JSON agrees with them within the container's noise.
   5.6e-9.
 - **Python: investm's NumPy code holds its own.** The no-short-sales
   optimizers are the fastest of PyPortfolioOpt (cvxpy), SciPy SLSQP and
-  investm at 100 assets (2.2x faster than PyPortfolioOpt for the max-Sharpe
-  portfolio, 4.2x for the quadratic-utility one, 23-42x faster than SLSQP),
-  and every optimizer reaches the same optimum to 1e-15, except SLSQP on the
-  100-asset max-Sharpe problem (2.2e-10 short).
-- **Python gaps, after the second round:** implied volatility went from
-  70 us to 6.8 us (vollib 15 us, QuantLib's C++ through SWIG 1.5 us), the
-  variance ratio from 0.87 ms to 0.25 ms (arch 0.41 ms) and the
-  autocorrelation from 0.29 ms to 83 us (statsmodels 64 us). The act/act
-  clean price went from 65 us to 22 us, still behind QuantLib's 8.8 us, and
-  the 100-step CRR tree (0.54 ms against QuantLib's 69 us) is left as it
-  is. See [Gaps closed](#gaps-closed).
+  investm at 100 assets (4.5x faster than PyPortfolioOpt for the max-Sharpe
+  portfolio, 12x for the quadratic-utility one, 19-43x faster than SLSQP),
+  and every optimizer reaches the same optimum to 6e-15, except SLSQP on the
+  100-asset max-Sharpe problem (4.0e-10 short).
+- **Python gaps that remain:** investm is behind another library on implied
+  volatility (10.8 us; vollib 18 us, QuantLib's C++ through SWIG 1.2 us),
+  N(x) (190 ns; SciPy 112 ns), the variance ratio (365 us; arch 271 us, with
+  a different definition), the autocorrelation (106 us; statsmodels 53 us),
+  the runs test (90 us; statsmodels 83 us), the act/act clean price (24 us;
+  QuantLib 6.7 us) and the 100-step CRR tree (346 us; QuantLib 49 us). The
+  second round had already cut implied volatility, the variance ratio, the
+  autocorrelation and the clean price by 3-10x; see
+  [Gaps closed](#gaps-closed).
 
 Accuracy findings in the other libraries:
 
@@ -63,8 +68,8 @@ Accuracy findings in the other libraries:
    default tolerance (1e-6) gives a yield off by 1.2e-12. Both are exact to
    rounding when asked for 1e-12.
 4. **QuantLib 1.33's `BondFunctions::yield` takes 0.49 ms in C++, while the
-   1.44 wheel takes 81 us from Python** for the same bond, so the
-   difference is the version, not the binding. It was not investigated
+   1.44 wheel takes 81 us from Python** in the same container for the same
+   bond, so the difference is the version, not the binding. It was not investigated
    further.
 5. **Definitions differ in two places, by design:** arch's variance ratio is
    Lo and MacKinlay's (drift from the end points, divisor n, with or without
@@ -77,10 +82,11 @@ Accuracy findings in the other libraries:
 
 | | |
 | --- | --- |
-| Host | Cloud container, 4 cores at 2.1 GHz, Ubuntu 24.04 (noisy; see [Performance](performance.md)) |
+| Host (C++) | Cloud container, 4 cores at 2.1 GHz, Ubuntu 24.04 (noisy; see [Performance](performance.md)) |
+| Host (Python) | Desktop, Core Ultra 9 185H, the `docker/Dockerfile` image (Ubuntu 24.04) on Docker Desktop and WSL2, pinned to CPUs 0, 2, 4 and 6 |
 | C++ | GCC 13.3, `Release` (-O3), Google Benchmark 1.8.3, median of 5 repetitions |
 | QuantLib (C++) | 1.33, Ubuntu 24.04 package `libquantlib0-dev` |
-| Python | 3.13, NumPy 2.5.3, best of 5 `timeit` runs |
+| Python | 3.13, NumPy 2.5.4, best of 5 `timeit` runs |
 | Python libraries | QuantLib 1.44 (wheel), numpy-financial 1.1.0, SciPy 1.18.1, statsmodels 0.15.0, PyPortfolioOpt 1.6.0, cvxpy 1.9.3 (Clarabel), arch 8.0.0, vollib 1.0.11, pandas 3.0.5, mpmath 1.4.1 |
 | Threads | One everywhere (`OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`) |
 
@@ -159,9 +165,9 @@ form in mpmath.
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm | 0.88 us | -5.4e-15 |
-| QuantLib (`blackFormula`) | 263 ns | 2.6e-15 |
-| vollib | 3.35 us | -1.8e-15 |
+| investm | 1.21 us | -5.4e-15 |
+| QuantLib (`blackFormula`) | 309 ns | 2.6e-15 |
+| vollib | 4.21 us | -1.8e-15 |
 
 ### Price and Greeks (Ch. 19)
 
@@ -170,9 +176,9 @@ Price, delta, gamma, vega, theta and rho of the same call in one call
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm | 1.76 us | 3.6e-16 |
-| QuantLib (`BlackCalculator`) | 5.62 us | 1.2e-15 |
-| vollib (rescaled to per 1.00 and per year) | 15.1 us | 3.8e-16 |
+| investm | 2.58 us | 3.6e-16 |
+| QuantLib (`BlackCalculator`) | 4.76 us | 1.2e-15 |
+| vollib (rescaled to per 1.00 and per year) | 14.5 us | 3.8e-16 |
 
 ### Implied volatility (Ch. 19)
 
@@ -181,10 +187,10 @@ the 50-digit price.
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm (Newton in a bracket) | 6.81 us | 8.1e-16 |
-| QuantLib (default accuracy) | 1.49 us | -5.1e-7 |
-| QuantLib (1e-12) | 2.23 us | -9.5e-13 |
-| vollib (Let's Be Rational) | 15.1 us | -6.3e-16 |
+| investm (Newton in a bracket) | 10.8 us | 8.1e-16 |
+| QuantLib (default accuracy) | 1.17 us | -5.1e-7 |
+| QuantLib (1e-12) | 1.64 us | -9.5e-13 |
+| vollib (Let's Be Rational) | 18.1 us | -6.3e-16 |
 
 ### CRR trees (Ch. 19)
 
@@ -194,8 +200,8 @@ Black-Scholes put.
 
 | Library | American, 100 steps | American, 1,000 steps | Error at 1,000 | European, 1,000 steps | Error |
 | --- | --- | --- | --- | --- | --- |
-| investm | 484 us | 5.88 ms | -6.0e-4 | 36.6 us | -1.3e-3 |
-| QuantLib | 68 us | 4.78 ms | -5.9e-4 | 830 us | -1.3e-3 |
+| investm | 346 us | 4.15 ms | -6.0e-4 | 35.1 us | -1.3e-3 |
+| QuantLib | 49.4 us | 3.41 ms | -5.9e-4 | 521 us | -1.3e-3 |
 
 ### Normal distribution (Ch. 6)
 
@@ -204,10 +210,10 @@ table, against mpmath.
 
 | Library | N(x) | Rel. error | N^-1(p) | Abs. error in z |
 | --- | --- | --- | --- | --- |
-| investm | 119 ns | 9.0e-15 | 156 ns | 3.1e-15 |
-| QuantLib | 459 ns | 1.3e-7 | 457 ns | 5.6e-9 |
-| SciPy (`special.ndtr`, `ndtri`) | 120 ns | 9.5e-15 | 145 ns | 1.2e-15 |
-| SciPy (`stats.norm.cdf`, `ppf`) | 36.2 us | 9.5e-15 | 49.8 us | 1.2e-15 |
+| investm | 190 ns | 9.0e-15 | 216 ns | 3.1e-15 |
+| QuantLib | 433 ns | 1.3e-7 | 458 ns | 5.6e-9 |
+| SciPy (`special.ndtr`, `ndtri`) | 112 ns | 9.5e-15 | 126 ns | 1.2e-15 |
+| SciPy (`stats.norm.cdf`, `ppf`) | 29.2 us | 9.5e-15 | 43.1 us | 1.2e-15 |
 
 `scipy.stats.norm` costs 300x the function it wraps for a scalar; it is
 built for arrays.
@@ -219,11 +225,11 @@ reference: exact rationals; yield reference: mpmath root.
 
 | Library | Price | Error | Yield | Error |
 | --- | --- | --- | --- | --- |
-| investm | 1.90 us | -3.7e-15 | 37.1 us | 8e-18 |
-| QuantLib | 6.55 us | 2.2e-13 | 80.6 us | 3.7e-16 |
-| numpy-financial (`pv`; `rate`, default tol) | 8.63 us | 1.1e-14 | 89.8 us | 1.2e-12 |
-| numpy-financial (`npv`; `rate`, tol 1e-12) | 4.88 us | 8.2e-14 | 103 us | 8e-18 |
-| SciPy (`brentq` on numpy-financial's `pv`) | | | 130 us | 3.6e-17 |
+| investm | 2.77 us | -3.7e-15 | 48.6 us | 8e-18 |
+| QuantLib | 4.74 us | 2.2e-13 | 52.3 us | 3.7e-16 |
+| numpy-financial (`pv`; `rate`, default tol) | 6.61 us | -3.7e-15 | 60.3 us | 1.2e-12 |
+| numpy-financial (`npv`; `rate`, tol 1e-12) | 4.17 us | 8.2e-14 | 70 us | -6e-18 |
+| SciPy (`brentq` on numpy-financial's `pv`) | | | 89 us | 3.6e-17 |
 
 ### Duration and convexity (Ch. 14)
 
@@ -232,8 +238,8 @@ duration and convexity, against exact rationals.
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm | 9.96 us | 5.2e-16 |
-| QuantLib | 22.2 us | 2.8e-16 |
+| investm | 14.2 us | 5.2e-16 |
+| QuantLib | 14.7 us | 2.8e-16 |
 
 ### Accrued interest and clean price, act/act (Ch. 13)
 
@@ -243,8 +249,8 @@ price 103.544528.
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm | 21.9 us | 3.5e-14 |
-| QuantLib (`ActualActual(ISMA)`) | 8.79 us | 1.2e-13 |
+| investm | 24.3 us | 3.5e-14 |
+| QuantLib (`ActualActual(ISMA)`) | 6.74 us | 1.2e-13 |
 
 ### Bootstrapping (Ch. 5)
 
@@ -253,8 +259,8 @@ s(t) = 3% + 2% (1 - e^(-t/5)). Error: the largest discount-factor error.
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm | 14.0 us | 2.2e-16 |
-| QuantLib (`PiecewiseLogLinearDiscount`) | 1.30 ms | 1.6e-15 |
+| investm | 18.8 us | 2.2e-16 |
+| QuantLib (`PiecewiseLogLinearDiscount`) | 780 us | 1.6e-15 |
 
 ### Internal rate of return (Ch. 5, 24)
 
@@ -263,9 +269,9 @@ Reference: mpmath root, 12.53528785%.
 
 | Library | Time | Error |
 | --- | --- | --- |
-| investm (Brent) | 20.2 us | -5e-19 |
-| numpy-financial (`irr`, companion-matrix eigenvalues) | 55.7 us | 1.9e-15 |
-| SciPy (`brentq` on numpy-financial's `npv`) | 78.2 us | 1.8e-14 |
+| investm (Brent) | 26.4 us | -5e-19 |
+| numpy-financial (`irr`, companion-matrix eigenvalues) | 41.2 us | 1.9e-15 |
+| SciPy (`brentq` on numpy-financial's `npv`) | 59.5 us | 1.8e-14 |
 
 ### Portfolio optimization (Ch. 7, 8)
 
@@ -276,11 +282,11 @@ tangency, against the closed form.
 
 | Problem | investm | PyPortfolioOpt | SciPy SLSQP |
 | --- | --- | --- | --- |
-| Tangency, 20 assets, short sales allowed | 57 us, 0 | 6.11 ms, -7e-16 | |
-| Max Sharpe, 20 assets, no short sales | 3.76 ms, 2e-16 | 6.52 ms, 0 | 3.38 ms, 0 |
-| Max Sharpe, 100 assets, no short sales | 10.9 ms, 0 | 23.7 ms, 9e-16 | 253 ms, 2.2e-10 |
-| Max tau mu'w - w'Sw, 20 assets, no short sales | 0.93 ms, 0 | 6.37 ms, 7e-18 | 3.25 ms, 6e-17 |
-| Max tau mu'w - w'Sw, 100 assets, no short sales | 2.28 ms, 0 | 9.57 ms, 2e-17 | 96.9 ms, 2e-15 |
+| Tangency, 20 assets, short sales allowed | 41.4 us, 0 | 12.6 ms, -2e-16 | |
+| Max Sharpe, 20 assets, no short sales | 2.92 ms, 5e-15 | 13 ms, 6e-15 | 2.45 ms, 0 |
+| Max Sharpe, 100 assets, no short sales | 8.56 ms, 4e-15 | 38.7 ms, 0 | 165 ms, 4.0e-10 |
+| Max tau mu'w - w'Sw, 20 assets, no short sales | 0.76 ms, 7e-18 | 12.9 ms, 0 | 2.48 ms, 6e-17 |
+| Max tau mu'w - w'Sw, 100 assets, no short sales | 1.50 ms, 0 | 17.9 ms, 5e-17 | 64.3 ms, 2e-15 |
 
 investm and PyPortfolioOpt solve the max-Sharpe problem the same way (one
 QP in z = w / k with (mu - r_f)'z = 1); investm uses its own accelerated
@@ -293,9 +299,9 @@ with n.
 
 | Case | investm | Other | Error (investm / other) |
 | --- | --- | --- | --- |
-| Implied returns, 20 assets (PyPortfolioOpt `market_implied_prior_returns`) | 4.13 us | 262 us | 3e-17 / 2e-17 |
-| Style analysis, 120 x 8 (cvxpy, Clarabel) | 0.87 ms | 5.75 ms | 0 / 3e-21 |
-| Style analysis, 120 x 8 (SciPy SLSQP) | 0.87 ms | 0.76 ms | 0 / 4e-18 |
+| Implied returns, 20 assets (PyPortfolioOpt `market_implied_prior_returns`) | 3.24 us | 227 us | 1e-17 / 2e-17 |
+| Style analysis, 120 x 8 (cvxpy, Clarabel) | 0.74 ms | 4.98 ms | 0 / 3e-21 |
+| Style analysis, 120 x 8 (SciPy SLSQP) | 0.74 ms | 0.59 ms | 0 / 4e-18 |
 
 PyPortfolioOpt's prior is delta S w + r_f; with delta = market premium /
 var(market) it is the book's r_f + beta (E[r_M] - r_f). The style-analysis
@@ -308,20 +314,20 @@ the tests.
 
 | Case | Library | Time | Error |
 | --- | --- | --- | --- |
-| Market model, 60 months | investm | 74.9 us | 6.5e-17 |
-| | statsmodels (`OLS`, all statistics) | 124 us | 6.0e-16 |
-| | SciPy (`linregress`) | 406 us | 2.9e-16 |
-| | NumPy (`polyfit`) | 24.9 us | 8.2e-16 |
-| Treynor-Mazuy, 120 months | investm | 104 us | 5.2e-16 |
-| | statsmodels | 173 us | 4.7e-16 |
-| Runs test z, 500 returns | investm | 96 us | 5e-16 |
-| | statsmodels (`runstest_1samp`) | 98 us | 5e-16 |
-| Variance ratio VR(4), 1,000 returns | investm | 251 us | 6e-17 |
-| | arch (`debiased=False`) | 407 us | -3.1e-3 (definition) |
-| | arch (default, debiased) | 402 us | 3.1e-3 (definition) |
-| Lag-1 autocorrelation, 500 returns | investm | 83 us | -1e-17 |
-| | statsmodels (`acf`) | 64 us | -3e-17 |
-| | pandas (`autocorr`) | 189 us | 2.4e-4 (definition) |
+| Market model, 60 months | investm | 54.8 us | 6.5e-17 |
+| | statsmodels (`OLS`, all statistics) | 115 us | 6.0e-16 |
+| | SciPy (`linregress`) | 337 us | 2.9e-16 |
+| | NumPy (`polyfit`) | 23.2 us | 6.0e-16 |
+| Treynor-Mazuy, 120 months | investm | 93.5 us | 5.2e-16 |
+| | statsmodels | 156 us | 4.7e-16 |
+| Runs test z, 500 returns | investm | 90 us | 5e-16 |
+| | statsmodels (`runstest_1samp`) | 83 us | 5e-16 |
+| Variance ratio VR(4), 1,000 returns | investm | 365 us | 6e-17 |
+| | arch (`debiased=False`) | 274 us | -3.1e-3 (definition) |
+| | arch (default, debiased) | 271 us | 3.1e-3 (definition) |
+| Lag-1 autocorrelation, 500 returns | investm | 106 us | -1e-17 |
+| | statsmodels (`acf`) | 53 us | -3e-17 |
+| | pandas (`autocorr`) | 129 us | 2.4e-4 (definition) |
 
 The timing t-statistics agree to all printed digits (5.033555), as do the
 market-model betas.
@@ -331,7 +337,9 @@ market-model betas.
 The first round listed places where investm was slower than another library
 on the same inputs. A second round, the same pass the ofod11 companion made
 after its comparison, changed the code behind most of them. Results that
-were exact before are still exact, and each change has a new test.
+were exact before are still exact, and each change has a new test. The times
+in this table are all from the cloud container, so each before and after
+pair comes from one machine; the Python tables above have the desktop times.
 
 | Case | Before | After | Other library | Change |
 | --- | --- | --- | --- | --- |
@@ -345,12 +353,12 @@ were exact before are still exact, and each change has a new test.
 
 Left as they are:
 
-- **Python CRR tree at 100 steps** (0.54 ms against QuantLib's 69 us
+- **Python CRR tree at 100 steps** (346 us against QuantLib's 49 us
   through SWIG): each step is a few NumPy calls on short arrays, and their
   overhead dominates small trees. A pure-Python loop is slower still; the
   fast path is the C++ tree (3.9 us), which investm does not bind to
   Python.
-- **Python act/act clean price** is still 2.5x QuantLib's: what remains is
+- **Python act/act clean price** is still 3.6x QuantLib's: what remains is
   `datetime` arithmetic in `add_months` and the day counts.
 - `core/stats` and Chapter 4 stay pure Python (no NumPy), as the layout in
   the README describes for the early chapters.
@@ -382,3 +390,6 @@ On Windows, the Docker image built from `docker/Dockerfile` has everything:
 ```powershell
 docker run --rm -v C:\develop:/develop -w /develop/investm investm-dev scripts/compare.sh
 ```
+
+The Python tables here came from `--cpuset-cpus=0,2,4,6` after `--rm` and
+`scripts/compare.sh python`.
