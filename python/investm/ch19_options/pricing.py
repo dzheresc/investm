@@ -69,9 +69,9 @@ def binomial_price(spec: OptionSpec, steps: int, american: bool) -> float:
             ([steps * math.log1p(-p)], steps * math.log1p(-p) +
              np.cumsum(np.log((steps - j + 1) / j) + math.log(p / (1 - p)))))
         s = spec.spot * u**(2.0 * np.arange(steps + 1) - steps)
-        payoff = np.maximum(sign * (s - spec.strike), 0.0)
+        terminal = np.maximum(sign * (s - spec.strike), 0.0)
         return float(
-            math.exp(-spec.rate * spec.years) * (np.exp(log_w) @ payoff))
+            math.exp(-spec.rate * spec.years) * (np.exp(log_w) @ terminal))
     # Node (i, j) has price S u^(2j - i): one step back multiplies by u, so
     # the early-exercise check reuses the terminal prices without powers.
     s = spec.spot * u**(2.0 * np.arange(steps + 1) - steps)
