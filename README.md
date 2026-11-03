@@ -72,9 +72,9 @@ The container mounts `C:\develop` at `/develop`, so build outputs, valgrind repo
 | IV. Fixed income | 13 | Fixed-income securities: day counts, accrued interest, callables | done |
 | | 14 | Bond analysis: duration, convexity, default risk, credit scoring | done |
 | | 15 | Bond portfolio management: horizon analysis, immunization, dedication, swaps | done |
-| V. Common stocks | 16 | Common stocks | planned |
-| | 17 | Valuation of common stocks: dividend discount models | planned |
-| | 18 | Earnings | planned |
+| V. Common stocks | 16 | Common stocks: voting, splits, rights, betas and leverage | done |
+| | 17 | Valuation of common stocks: dividend discount models, P/E, PVGO | done |
+| | 18 | Earnings: Lintner model, naive forecasts, SUE | done |
 | VI. Derivatives | 19 | Options: binomial and Black-Scholes | planned |
 | | 20 | Futures | planned |
 | VII. Investment management | 21 | Investment companies | planned |
