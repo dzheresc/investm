@@ -41,20 +41,29 @@ double BinomialPrice(const OptionSpec& spec, int steps, bool american) {
   INVESTM_CHECK(p > 0.0 && p < 1.0, "too few steps for these parameters");
   const double disc = std::exp(-spec.rate * dt);
   const auto n = static_cast<std::size_t>(steps);
+  // With d = 1/u the price at node (i, j) is S u^(2j - i), so stepping back
+  // one level multiplies every price by u. Only the O(n) terminal prices
+  // use pow; the O(n^2) backward pass for early exercise is multiplications.
+  std::vector<double> s(n + 1);
   std::vector<double> v(n + 1);
+  const double log_u = std::log(u);
   for (std::size_t j = 0; j <= n; ++j) {
-    const double s = spec.spot * std::pow(u, static_cast<double>(j)) *
-                     std::pow(d, static_cast<double>(n - j));
-    v[j] = Payoff(spec.type, spec.strike, s);
+    const double up_moves =
+        2.0 * static_cast<double>(j) - static_cast<double>(n);
+    s[j] = spec.spot * std::exp(up_moves * log_u);
+    v[j] = Payoff(spec.type, spec.strike, s[j]);
   }
+  const double pu = disc * p;
+  const double pd = disc * (1.0 - p);
   for (std::size_t i = n; i-- > 0;) {
-    for (std::size_t j = 0; j <= i; ++j) {
-      v[j] = disc * (p * v[j + 1] + (1.0 - p) * v[j]);
-      if (american) {
-        const double s = spec.spot * std::pow(u, static_cast<double>(j)) *
-                         std::pow(d, static_cast<double>(i - j));
-        v[j] = std::max(v[j], Payoff(spec.type, spec.strike, s));
+    if (american) {
+      for (std::size_t j = 0; j <= i; ++j) {
+        s[j] *= u;
+        v[j] = std::max(pu * v[j + 1] + pd * v[j],
+                        Payoff(spec.type, spec.strike, s[j]));
       }
+    } else {
+      for (std::size_t j = 0; j <= i; ++j) v[j] = pu * v[j + 1] + pd * v[j];
     }
   }
   return v[0];

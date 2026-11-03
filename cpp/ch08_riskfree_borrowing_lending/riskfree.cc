@@ -1,7 +1,9 @@
 #include "cpp/ch08_riskfree_borrowing_lending/riskfree.h"
 
+#include <algorithm>
 #include <cmath>
 #include <numeric>
+#include <vector>
 
 #include "cpp/core/check.h"
 
@@ -32,12 +34,23 @@ std::optional<ch07::PortfolioPoint> TangencyPortfolio(
   return ch07::Evaluate(z, mu, cov);
 }
 
-ch07::PortfolioPoint TangencyPortfolioNoShortSales(std::span<const double> mu,
-                                                   const Matrix& cov,
-                                                   double rf) {
+namespace {
+
+// Golden-section search for the best Sharpe ratio along the no-short-sales
+// efficient set, indexed by log risk tolerance. Only used when no security
+// beats the riskless rate, where the direct formulation below does not apply.
+ch07::PortfolioPoint TangencyBySearch(std::span<const double> mu,
+                                      const Matrix& cov, double rf) {
+  const std::size_t n = mu.size();
+  const double lipschitz = 2.0 * LargestEigenvalue(cov);
+  const Vector ones(n, 1.0);
+  Vector c(n);
+  Vector w(n, 1.0 / static_cast<double>(n));  // Warm start across probes.
   auto sharpe_at = [&](double log_tau, ch07::PortfolioPoint* out) {
-    const ch07::PortfolioPoint p =
-        ch07::OptimalNoShortSales(mu, cov, std::exp(log_tau));
+    const double tau = std::exp(log_tau);
+    for (std::size_t i = 0; i < n; ++i) c[i] = tau * mu[i];
+    ch07::SolveAffineSimplexQp(cov, c, ones, lipschitz, w);
+    const ch07::PortfolioPoint p = ch07::Evaluate(w, mu, cov);
     if (out != nullptr) *out = p;
     return p.std_dev > 0.0 ? (p.expected_return - rf) / p.std_dev : -1e300;
   };
@@ -68,6 +81,33 @@ ch07::PortfolioPoint TangencyPortfolioNoShortSales(std::span<const double> mu,
   ch07::PortfolioPoint best;
   sharpe_at(0.5 * (lo + hi), &best);
   return best;
+}
+
+}  // namespace
+
+ch07::PortfolioPoint TangencyPortfolioNoShortSales(std::span<const double> mu,
+                                                   const Matrix& cov,
+                                                   double rf) {
+  const std::size_t n = mu.size();
+  INVESTM_CHECK(n > 0 && cov.rows() == n && cov.cols() == n,
+                "dimension mismatch");
+  Vector excess(n);
+  for (std::size_t i = 0; i < n; ++i) excess[i] = mu[i] - rf;
+  if (*std::max_element(excess.begin(), excess.end()) <= 0.0) {
+    return TangencyBySearch(mu, cov, rf);
+  }
+  // The Sharpe ratio is scale free, so fix the excess return at one and
+  // minimize variance: min z'S z s.t. (mu - rf)'z = 1, z >= 0. Then
+  // w = z / 1'z. One convex QP replaces a search over the efficient set.
+  Vector z(n, 0.0);
+  const Vector no_linear_term(n, 0.0);
+  ch07::SolveAffineSimplexQp(cov, no_linear_term, excess,
+                             2.0 * LargestEigenvalue(cov), z);
+  double total = 0.0;
+  for (const double x : z) total += x;
+  INVESTM_CHECK(total > 0.0, "degenerate tangency problem");
+  for (double& x : z) x /= total;
+  return ch07::Evaluate(z, mu, cov);
 }
 
 double OptimalFractionInTangency(const ch07::PortfolioPoint& tangency,

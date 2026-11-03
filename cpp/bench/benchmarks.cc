@@ -103,10 +103,9 @@ std::vector<Case> MakeCases() {
     cases.push_back({"core/cholesky/" + s, [=] {
                        DoNotOptimize(Trace(investm::Cholesky(spd).value()));
                      }});
-    cases.push_back({"core/eigen_symmetric/" + s, [=] {
-                       DoNotOptimize(
-                           investm::EigenSymmetric(spd).values.front());
-                     }});
+    cases.push_back(
+        {"core/eigen_symmetric/" + s,
+         [=] { DoNotOptimize(investm::EigenSymmetric(spd).values.front()); }});
   }
   {
     const Matrix data = FactorReturns(1000, 100, 4);
@@ -116,26 +115,24 @@ std::vector<Case> MakeCases() {
     const Matrix x = RandomMatrix(2000, 10, 5);
     Vector y(2000);
     for (std::size_t i = 0; i < y.size(); ++i) y[i] = x(i, 0) + 0.1 * x(i, 1);
-    cases.push_back({"core/multiple_ols/2000x10", [=] {
-                       DoNotOptimize(
-                           investm::MultipleOls(x, y)->coefficients[1]);
-                     }});
+    cases.push_back(
+        {"core/multiple_ols/2000x10",
+         [=] { DoNotOptimize(investm::MultipleOls(x, y)->coefficients[1]); }});
   }
 
   // --- ch05 riskless securities --------------------------------------------
   {
     const auto bond = ch05::CouponBond(100.0, 0.045, 30.0, 2);
-    cases.push_back({"ch05/ytm/30y_semiannual", [=] {
-                       DoNotOptimize(
-                           ch05::YieldToMaturity(bond, 93.5, 2).value());
-                     }});
+    cases.push_back(
+        {"ch05/ytm/30y_semiannual",
+         [=] { DoNotOptimize(ch05::YieldToMaturity(bond, 93.5, 2).value()); }});
     std::vector<ch05::BondQuote> quotes;
     for (int t = 1; t <= 30; ++t) {
       const double c = 0.03 + 0.0005 * t;
       const double y = 0.032 + 0.0006 * t;
-      quotes.push_back({100.0, c,
-                        ch05::PresentValueAtYield(
-                            ch05::CouponBond(100.0, c, t), y)});
+      quotes.push_back(
+          {100.0, c,
+           ch05::PresentValueAtYield(ch05::CouponBond(100.0, c, t), y)});
     }
     cases.push_back({"ch05/bootstrap/30", [=] {
                        DoNotOptimize(ch05::Bootstrap(quotes)->Spot(30));
@@ -156,26 +153,26 @@ std::vector<Case> MakeCases() {
                            ch07::OptimalNoShortSales(mu, cov, 0.5).std_dev);
                      }});
     const std::vector<double> taus{0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4};
-    cases.push_back({"ch07/efficient_set_no_short/" + s + "x8", [=] {
-                       DoNotOptimize(
-                           ch07::EfficientSetNoShortSales(mu, cov, taus)
-                               .back()
-                               .std_dev);
-                     }});
-    cases.push_back({"ch08/tangency_no_short/" + s, [=] {
-                       DoNotOptimize(ch08::TangencyPortfolioNoShortSales(
-                                         mu, cov, 0.03)
-                                         .std_dev);
-                     }});
+    cases.push_back(
+        {"ch07/efficient_set_no_short/" + s + "x8", [=] {
+           DoNotOptimize(
+               ch07::EfficientSetNoShortSales(mu, cov, taus).back().std_dev);
+         }});
+    cases.push_back(
+        {"ch08/tangency_no_short/" + s, [=] {
+           DoNotOptimize(
+               ch08::TangencyPortfolioNoShortSales(mu, cov, 0.03).std_dev);
+         }});
   }
 
   // --- ch10 factor models --------------------------------------------------
   {
     const Matrix r = FactorReturns(250, 100, 7);
-    cases.push_back({"ch10/principal_components/250x100", [=] {
-                       DoNotOptimize(ch10::EstimatePrincipalComponents(r, 3)
-                                         .explained_fraction);
-                     }});
+    cases.push_back(
+        {"ch10/principal_components/250x100", [=] {
+           DoNotOptimize(
+               ch10::EstimatePrincipalComponents(r, 3).explained_fraction);
+         }});
   }
 
   // --- ch13/ch14 bonds -----------------------------------------------------
@@ -183,14 +180,14 @@ std::vector<Case> MakeCases() {
     using std::chrono::day;
     using std::chrono::month;
     using std::chrono::year;
-    const ch13::Bond note{100.0, 0.0425, ch13::Date{year{2054}, month{2}, day{15}},
-                          2, ch13::DayCount::kActualActual};
+    const ch13::Bond note{100.0, 0.0425,
+                          ch13::Date{year{2054}, month{2}, day{15}}, 2,
+                          ch13::DayCount::kActualActual};
     const ch13::Date settle{year{2026}, month{11}, day{3}};
-    cases.push_back({"ch13/yield_from_clean_price/28y", [=] {
-                       DoNotOptimize(
-                           ch13::YieldFromCleanPrice(note, settle, 96.4)
-                               .value());
-                     }});
+    cases.push_back(
+        {"ch13/yield_from_clean_price/28y", [=] {
+           DoNotOptimize(ch13::YieldFromCleanPrice(note, settle, 96.4).value());
+         }});
     const auto flows = ch05::CouponBond(100.0, 0.05, 30.0, 2);
     cases.push_back({"ch14/duration_convexity/30y", [=] {
                        DoNotOptimize(ch14::ModifiedDuration(flows, 0.05, 2) +
@@ -200,8 +197,8 @@ std::vector<Case> MakeCases() {
 
   // --- ch19 options --------------------------------------------------------
   {
-    const ch19::OptionSpec put{ch19::OptionType::kPut, 100.0, 105.0, 0.05,
-                               0.3, 1.0, 0.01};
+    const ch19::OptionSpec put{
+        ch19::OptionType::kPut, 100.0, 105.0, 0.05, 0.3, 1.0, 0.01};
     for (int steps : {100, 1000}) {
       const std::string s = std::to_string(steps);
       cases.push_back({"ch19/binomial_european/" + s, [=] {
@@ -215,10 +212,9 @@ std::vector<Case> MakeCases() {
                        DoNotOptimize(ch19::BlackScholesGreeks(put).gamma);
                      }});
     const double price = ch19::BlackScholesPrice(put);
-    cases.push_back({"ch19/implied_volatility", [=] {
-                       DoNotOptimize(
-                           ch19::ImpliedVolatility(put, price).value());
-                     }});
+    cases.push_back(
+        {"ch19/implied_volatility",
+         [=] { DoNotOptimize(ch19::ImpliedVolatility(put, price).value()); }});
   }
 
   // --- ch23/ch24 management and evaluation ---------------------------------
@@ -231,19 +227,19 @@ std::vector<Case> MakeCases() {
                        DoNotOptimize(
                            ch23::Cppi(path, 0.003, 3.0, 0.8).wealth.back());
                      }});
-    cases.push_back({"ch23/constant_mix/120", [=] {
-                       DoNotOptimize(ch23::ConstantMix(path, 0.003, 0.6, 0.05)
-                                         .wealth.back());
-                     }});
+    cases.push_back(
+        {"ch23/constant_mix/120", [=] {
+           DoNotOptimize(
+               ch23::ConstantMix(path, 0.003, 0.6, 0.05).wealth.back());
+         }});
     const Matrix styles = FactorReturns(120, 8, 9);
     Vector fund(120);
     for (std::size_t t = 0; t < fund.size(); ++t) {
       fund[t] = 0.3 * styles(t, 1) + 0.5 * styles(t, 4) + 0.2 * styles(t, 6);
     }
-    cases.push_back({"ch24/style_analysis/120x8", [=] {
-                       DoNotOptimize(
-                           ch24::StyleAnalysis(fund, styles).r_squared);
-                     }});
+    cases.push_back(
+        {"ch24/style_analysis/120x8",
+         [=] { DoNotOptimize(ch24::StyleAnalysis(fund, styles).r_squared); }});
   }
   return cases;
 }

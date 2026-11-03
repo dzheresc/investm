@@ -36,9 +36,10 @@ double SharpeRatio(double expected_return, double std_dev, double rf);
 std::optional<ch07::PortfolioPoint> TangencyPortfolio(
     std::span<const double> mu, const Matrix& cov, double rf);
 
-// Tangency portfolio with no short sales: maximizes the Sharpe ratio along
-// the no-short-sales efficient set (golden-section search on the risk
-// tolerance that indexes the set).
+// Tangency portfolio with no short sales: the long-only portfolio with the
+// highest Sharpe ratio. Solved as one QP, min z'S z s.t. (mu - rf)'z = 1,
+// z >= 0, normalized to w = z / 1'z. When no security beats rf, falls back
+// to a golden-section search along the no-short-sales efficient set.
 ch07::PortfolioPoint TangencyPortfolioNoShortSales(std::span<const double> mu,
                                                    const Matrix& cov,
                                                    double rf);

@@ -89,11 +89,13 @@ int RunAll(const std::vector<Case>& cases, const Options& options) {
     std::int64_t iterations = 1;
     while (true) {
       const double t = SecondsFor(c.body, iterations);
-      if (t >= options.min_time / 4 || iterations > (std::int64_t{1} << 30)) break;
+      if (t >= options.min_time / 4 || iterations > (std::int64_t{1} << 30))
+        break;
       const double scale = t > 0 ? options.min_time / t : 100.0;
-      iterations = std::max(iterations * 2,
-                            static_cast<std::int64_t>(static_cast<double>(iterations) *
-                                      std::min(scale, 100.0)));
+      iterations =
+          std::max(iterations * 2,
+                   static_cast<std::int64_t>(static_cast<double>(iterations) *
+                                             std::min(scale, 100.0)));
     }
     std::vector<double> per_call;
     for (int r = 0; r < options.repetitions; ++r) {
@@ -103,8 +105,8 @@ int RunAll(const std::vector<Case>& cases, const Options& options) {
     std::sort(per_call.begin(), per_call.end());
     const double median = per_call[per_call.size() / 2];
     std::printf("%-44s %13s %13s %10" PRId64 "\n", c.name.c_str(),
-                FormatTime(median).c_str(), FormatTime(per_call.front()).c_str(),
-                iterations);
+                FormatTime(median).c_str(),
+                FormatTime(per_call.front()).c_str(), iterations);
     if (csv != nullptr) {
       std::fprintf(csv, "%s,%.6e,%.6e,%" PRId64 "\n", c.name.c_str(), median,
                    per_call.front(), iterations);

@@ -27,8 +27,8 @@ struct Options {
   double min_time = 0.2;  // Seconds per timed batch.
   int repetitions = 5;
   bool quick = false;
-  std::string filter;     // Substring; empty runs everything.
-  std::string csv_path;   // Optional machine-readable output.
+  std::string filter;    // Substring; empty runs everything.
+  std::string csv_path;  // Optional machine-readable output.
 };
 
 Options ParseOptions(int argc, char** argv);
