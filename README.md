@@ -75,8 +75,8 @@ The container mounts `C:\develop` at `/develop`, so build outputs, valgrind repo
 | V. Common stocks | 16 | Common stocks: voting, splits, rights, betas and leverage | done |
 | | 17 | Valuation of common stocks: dividend discount models, P/E, PVGO | done |
 | | 18 | Earnings: Lintner model, naive forecasts, SUE | done |
-| VI. Derivatives | 19 | Options: binomial and Black-Scholes | planned |
-| | 20 | Futures | planned |
+| VI. Derivatives | 19 | Options: strategies, parity, binomial, Black-Scholes, Greeks, warrants | done |
+| | 20 | Futures: marking to market, cost of carry, hedging, Black's model | done |
 | VII. Investment management | 21 | Investment companies | planned |
 | | 22 | Financial analysis | planned |
 | | 23 | Investment management | planned |
