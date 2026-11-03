@@ -36,6 +36,35 @@ class EfficientSetTest(unittest.TestCase):
                                    [0.3, 0.7, 0.0],
                                    atol=1e-15)
 
+    def test_affine_simplex_projection(self):
+        rng = np.random.default_rng(5)
+        for _ in range(20):
+            v = rng.normal(size=6)
+            np.testing.assert_allclose(es.project_onto_affine_simplex(
+                v, np.ones(6)),
+                                       es.project_onto_simplex(v),
+                                       atol=1e-14)
+        a = np.array([0.04, -0.02, 0.0, 0.10])
+        for v in ([1.0, 2.0, -1.0, 0.5], [0.0] * 4, [-5.0, 3.0, 2.0, -5.0]):
+            v = np.asarray(v)
+            z = es.project_onto_affine_simplex(v, a)
+            self.assertTrue((z >= 0).all())
+            self.assertAlmostEqual(float(a @ z), 1.0, 12)
+            k = int(np.nonzero((z > 0) & (a != 0))[0][0])
+            theta = (v[k] - z[k]) / a[k]
+            slack = theta * a - (v - z)
+            np.testing.assert_allclose(slack[z > 0], 0.0, atol=1e-12)
+            self.assertTrue((slack[z == 0] >= -1e-12).all())
+
+    def test_efficient_set_warm_start(self):
+        taus = [0.0, 0.1, 0.3, 1.0, 5.0]
+        for p, tau in zip(es.efficient_set_no_short_sales(_MU, _COV, taus),
+                          taus):
+            np.testing.assert_allclose(p.weights,
+                                       es.optimal_no_short_sales(
+                                           _MU, _COV, tau).weights,
+                                       atol=1e-9)
+
     def test_no_short_sales(self):
         free = es.UnconstrainedFrontier.create(_MU, _COV).optimal(0.3)
         self.assertTrue((free.weights > 0).all())

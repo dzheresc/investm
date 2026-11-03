@@ -38,6 +38,27 @@ class RiskfreeTest(unittest.TestCase):
                                    free.weights,
                                    atol=1e-5)
 
+    def test_no_short_sales_tangency_beats_random_portfolios(self):
+        mu = np.array([0.10, 0.03, 0.14, 0.09])
+        sd = np.array([0.18, 0.10, 0.28, 0.30])
+        corr = np.array([[1.0, 0.2, 0.3, 0.8], [0.2, 1.0, 0.1, 0.2],
+                         [0.3, 0.1, 1.0, 0.5], [0.8, 0.2, 0.5, 1.0]])
+        cov = np.outer(sd, sd) * corr
+        rf = 0.04
+        t = rfm.tangency_portfolio_no_short_sales(mu, cov, rf)
+        self.assertAlmostEqual(float(t.weights.sum()), 1.0, 12)
+        self.assertTrue((t.weights >= 0).all())
+        best = (t.expected_return - rf) / t.std_dev
+        w = np.random.default_rng(11).exponential(size=(2000, 4))
+        w /= w.sum(axis=1, keepdims=True)
+        sharpe = (w @ mu - rf) / np.sqrt(np.einsum("ij,jk,ik->i", w, cov, w))
+        self.assertLessEqual(float(sharpe.max()), best + 1e-9)
+
+    def test_no_short_sales_tangency_all_below_rf(self):
+        t = rfm.tangency_portfolio_no_short_sales(_MU, _COV, 0.5)
+        self.assertAlmostEqual(float(t.weights.sum()), 1.0, 12)
+        self.assertTrue((t.weights >= -1e-15).all())
+
     def test_regions(self):
         f = rfm.optimal_with_different_rates
         self.assertEqual(f(_MU, _COV, 0.03, 0.07, 0.05).region, rfm.Region.LEND)

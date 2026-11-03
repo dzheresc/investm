@@ -64,6 +64,81 @@ TEST(SimplexTest, ProjectionProperties) {
   for (std::size_t i = 0; i < 3; ++i) EXPECT_NEAR(same[i], inside[i], 1e-15);
 }
 
+TEST(SimplexTest, AffineProjectionMatchesSimplexWhenAIsOnes) {
+  AffineSimplexProjector proj(Vector{1.0, 1.0, 1.0});
+  Vector out(3);
+  for (const Vector& v : {Vector{0.5, 0.9, -1.0}, Vector{0.2, 0.3, 0.5},
+                          Vector{-3.0, -2.0, -1.0}, Vector{4.0, 4.0, 4.0}}) {
+    proj.Project(v, out);
+    const Vector expected = ProjectOntoSimplex(v);
+    for (std::size_t i = 0; i < 3; ++i) EXPECT_NEAR(out[i], expected[i], 1e-14);
+  }
+}
+
+TEST(SimplexTest, AffineProjectionWithMixedSigns) {
+  // a has positive, negative and zero entries (excess returns).
+  const Vector a{0.04, -0.02, 0.0, 0.10};
+  AffineSimplexProjector proj(a);
+  for (const Vector& v :
+       {Vector{1.0, 2.0, -1.0, 0.5}, Vector{0.0, 0.0, 0.0, 0.0},
+        Vector{-5.0, 3.0, 2.0, -5.0}}) {
+    Vector z(4);
+    proj.Project(v, z);
+    double az = 0.0;
+    for (std::size_t i = 0; i < 4; ++i) {
+      EXPECT_GE(z[i], 0.0);
+      az += a[i] * z[i];
+    }
+    EXPECT_NEAR(az, 1.0, 1e-12);
+    // Optimality: (v - z) is a multiple of a on the support, and
+    // v_i - z_i <= theta a_i ... equivalently v - z = theta a - mu with
+    // mu >= 0 and mu_i z_i = 0. Recover theta from a supported index.
+    std::size_t k = 4;
+    for (std::size_t i = 0; i < 4; ++i) {
+      if (z[i] > 0.0 && a[i] != 0.0) k = i;
+    }
+    ASSERT_LT(k, 4U);
+    const double theta = (v[k] - z[k]) / a[k];
+    for (std::size_t i = 0; i < 4; ++i) {
+      const double slack = theta * a[i] - (v[i] - z[i]);  // = mu_i
+      if (z[i] > 0.0) {
+        EXPECT_NEAR(slack, 0.0, 1e-12);
+      } else {
+        EXPECT_GE(slack, -1e-12);
+      }
+    }
+  }
+}
+
+TEST(SimplexQpTest, WarmStartAndRestartConvergeToSameAnswer) {
+  const Matrix cov = Cov();
+  const double lipschitz = 2.0 * LargestEigenvalue(cov);
+  Vector c(3);
+  for (std::size_t i = 0; i < 3; ++i) c[i] = 0.3 * kMu[i];
+  Vector cold(3, 1.0 / 3.0);
+  Vector warm{0.0, 0.0, 1.0};
+  const Vector ones(3, 1.0);
+  SolveAffineSimplexQp(cov, c, ones, lipschitz, cold);
+  SolveAffineSimplexQp(cov, c, ones, lipschitz, warm);
+  for (std::size_t i = 0; i < 3; ++i) EXPECT_NEAR(cold[i], warm[i], 1e-9);
+  // Restarting from the solution takes very few iterations.
+  Vector again = cold;
+  EXPECT_LT(SolveAffineSimplexQp(cov, c, ones, lipschitz, again), 10);
+}
+
+TEST(NoShortSalesTest, EfficientSetMatchesIndependentSolves) {
+  const Vector taus{0.0, 0.1, 0.3, 1.0, 5.0};
+  const std::vector<PortfolioPoint> set =
+      EfficientSetNoShortSales(kMu, Cov(), taus);
+  ASSERT_EQ(set.size(), taus.size());
+  for (std::size_t k = 0; k < taus.size(); ++k) {
+    const PortfolioPoint p = OptimalNoShortSales(kMu, Cov(), taus[k]);
+    for (std::size_t i = 0; i < 3; ++i) {
+      EXPECT_NEAR(set[k].weights[i], p.weights[i], 1e-9);
+    }
+  }
+}
+
 TEST(NoShortSalesTest, MatchesUnconstrainedWhenWeightsArePositive) {
   const auto f = UnconstrainedFrontier::Create(kMu, Cov());
   const PortfolioPoint free = f->Optimal(0.3);

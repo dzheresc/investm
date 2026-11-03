@@ -16,6 +16,7 @@
 
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "cpp/core/matrix.h"
@@ -73,10 +74,35 @@ class UnconstrainedFrontier {
 // Euclidean projection of v onto {w : w >= 0, sum w = 1}.
 Vector ProjectOntoSimplex(std::span<const double> v);
 
+// Euclidean projection onto {z : z >= 0, a'z = 1}. The answer has the form
+// z_i = max(0, v_i - theta a_i); theta solves a piecewise-linear monotone
+// equation, found exactly by sorting its breakpoints v_i / a_i. The set is
+// non-empty when some a_i > 0; entries of a may be negative or zero (as for
+// excess returns in the tangency problem). Buffers are reused across calls.
+class AffineSimplexProjector {
+ public:
+  explicit AffineSimplexProjector(std::span<const double> a);
+  void Project(std::span<const double> v, std::span<double> out);
+
+ private:
+  Vector a_;
+  std::vector<std::pair<double, std::size_t>> breakpoints_;
+};
+
 struct QpOptions {
   int max_iterations = 20000;
   double tolerance = 1e-12;  // On the change in weights per iteration.
 };
+
+// Minimizes z'S z - c'z over {z >= 0, a'z = 1} by accelerated projected
+// gradient (FISTA) with adaptive restart. `lipschitz` must bound the
+// gradient's Lipschitz constant 2 lambda_max(S) (see LargestEigenvalue);
+// pass it in so that a sequence of problems computes it once. `z` holds the
+// starting point on entry (warm start; projected first) and the solution on
+// exit. Returns the number of iterations used.
+int SolveAffineSimplexQp(const Matrix& cov, std::span<const double> c,
+                         std::span<const double> a, double lipschitz,
+                         std::span<double> z, QpOptions options = {});
 
 // Maximizes tau * mu'w - w'S w over the simplex (equivalent to maximizing
 // E - sigma^2 / tau). tau = 0 gives the minimum-variance portfolio.
@@ -84,7 +110,8 @@ PortfolioPoint OptimalNoShortSales(std::span<const double> mu,
                                    const Matrix& cov, double tau,
                                    QpOptions options = {});
 
-// Traces the no-short-sales efficient set by sweeping risk tolerance.
+// Traces the no-short-sales efficient set by sweeping risk tolerance. The
+// step size is computed once and each solve starts from the previous one.
 std::vector<PortfolioPoint> EfficientSetNoShortSales(
     std::span<const double> mu, const Matrix& cov, std::span<const double> taus,
     QpOptions options = {});

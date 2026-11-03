@@ -152,18 +152,12 @@ def style_analysis(fund, styles) -> StyleFit:
     x = np.asarray(styles, dtype=float)
     s = np.atleast_2d(np.cov(x, rowvar=False))
     c = np.array([np.cov(x[:, i], y)[0, 1] for i in range(x.shape[1])])
-    step = 1.0 / (2.0 * np.linalg.eigvalsh(s)[-1])
     k = x.shape[1]
-    w = np.full(k, 1.0 / k)
-    z = w.copy()
-    t = 1.0
-    for _ in range(50000):
-        nxt = es.project_onto_simplex(z - step * 2.0 * (s @ z - c))
-        t_next = 0.5 * (1 + math.sqrt(1 + 4 * t * t))
-        z = nxt + (t - 1) / t_next * (nxt - w)
-        change = float(np.max(np.abs(nxt - w)))
-        w, t = nxt, t_next
-        if change < 1e-13:
-            break
+    w = es.solve_affine_simplex_qp(s,
+                                   2.0 * c,
+                                   np.ones(k),
+                                   es.qp_lipschitz(s),
+                                   max_iter=50000,
+                                   tol=1e-13)
     resid = y - x @ w
     return StyleFit(w, 1 - float(np.var(resid, ddof=1) / np.var(y, ddof=1)))

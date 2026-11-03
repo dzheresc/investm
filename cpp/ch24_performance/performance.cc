@@ -144,35 +144,21 @@ StyleFit StyleAnalysis(std::span<const double> fund, const Matrix& styles) {
   INVESTM_CHECK(fund.size() == styles.rows(), "size mismatch");
   INVESTM_CHECK(styles.cols() >= 1, "need at least one style index");
   // Minimize w' S w - 2 w' c (+ const), S = Cov(styles), c = Cov(styles,
-  // fund), over the simplex: projected gradient with Nesterov momentum.
+  // fund), over the simplex: projected gradient with Nesterov momentum and
+  // adaptive restart.
   const Matrix s = CovarianceMatrix(styles);
   const std::size_t k = styles.cols();
   Vector c(k);
   for (std::size_t i = 0; i < k; ++i) {
     c[i] = stats::Covariance(styles.Column(i), fund);
   }
-  const double lipschitz = 2.0 * EigenSymmetric(s).values.front();
+  // Same QP as Ch. 7 with linear term 2c and a = 1.
+  const double lipschitz = 2.0 * LargestEigenvalue(s);
   INVESTM_CHECK(lipschitz > 0.0, "style indexes have no variance");
-  const double step = 1.0 / lipschitz;
+  for (double& x : c) x *= 2.0;
   Vector w(k, 1.0 / static_cast<double>(k));
-  Vector y = w;
-  double t = 1.0;
-  for (int it = 0; it < 50000; ++it) {
-    const Vector sy = s * y;
-    Vector g(k);
-    for (std::size_t i = 0; i < k; ++i)
-      g[i] = y[i] - step * 2.0 * (sy[i] - c[i]);
-    const Vector next = ch07::ProjectOntoSimplex(g);
-    const double t_next = 0.5 * (1.0 + std::sqrt(1.0 + 4.0 * t * t));
-    double change = 0.0;
-    for (std::size_t i = 0; i < k; ++i) {
-      y[i] = next[i] + (t - 1.0) / t_next * (next[i] - w[i]);
-      change = std::max(change, std::abs(next[i] - w[i]));
-    }
-    w = next;
-    t = t_next;
-    if (change < 1e-13) break;
-  }
+  ch07::SolveAffineSimplexQp(s, c, Vector(k, 1.0), lipschitz, w,
+                             {.max_iterations = 50000, .tolerance = 1e-13});
   std::vector<double> resid(fund.size());
   for (std::size_t r = 0; r < fund.size(); ++r) {
     resid[r] = fund[r] - Dot(styles.Row(r), w);
