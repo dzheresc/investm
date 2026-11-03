@@ -10,8 +10,28 @@
 #include <string>
 #include <vector>
 
+// Under callgrind, --quick dumps a profile per case (see scripts/profile.sh).
+// The client requests are no-ops outside valgrind; without the header
+// (e.g. MSVC) they compile away.
+#if defined(__has_include)
+#if __has_include(<valgrind/callgrind.h>)
+#include <valgrind/callgrind.h>
+#define INVESTM_BENCH_HAVE_CALLGRIND 1
+#endif
+#endif
+
 namespace investm::bench {
 namespace {
+
+// Ends the current callgrind dump, labelled `what`; the next dump starts
+// from zero, so each dump holds exactly one case.
+void DumpCallgrindStats(const std::string& what) {
+#ifdef INVESTM_BENCH_HAVE_CALLGRIND
+  CALLGRIND_DUMP_STATS_AT(what.c_str());
+#else
+  (void)what;
+#endif
+}
 
 volatile double g_sink = 0.0;
 
@@ -82,7 +102,9 @@ int RunAll(const std::vector<Case>& cases, const Options& options) {
       continue;
     }
     if (options.quick) {
+      DumpCallgrindStats("before " + c.name);
       c.body();
+      DumpCallgrindStats(c.name);
       std::printf("%-44s %13s %13s %10d\n", c.name.c_str(), "-", "-", 1);
       continue;
     }

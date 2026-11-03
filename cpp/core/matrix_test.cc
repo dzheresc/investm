@@ -166,6 +166,95 @@ TEST(MatrixTest, MultiplyIntoMatchesProduct) {
   }
 }
 
+// Textbook triple loop, for checking the unrolled product bit for bit.
+Matrix NaiveProduct(const Matrix& a, const Matrix& b) {
+  Matrix p(a.rows(), b.cols());
+  for (std::size_t i = 0; i < a.rows(); ++i) {
+    for (std::size_t k = 0; k < a.cols(); ++k) {
+      for (std::size_t j = 0; j < b.cols(); ++j) p(i, j) += a(i, k) * b(k, j);
+    }
+  }
+  return p;
+}
+
+Matrix Uniform(std::size_t rows, std::size_t cols, unsigned seed) {
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<double> u(-1.0, 1.0);
+  Matrix m(rows, cols);
+  for (std::size_t i = 0; i < rows; ++i) {
+    for (std::size_t j = 0; j < cols; ++j) m(i, j) = u(rng);
+  }
+  return m;
+}
+
+TEST(MatrixTest, ProductMatchesNaiveLoopExactly) {
+  // Inner dimensions on both sides of the 4-way unroll, plus empty ones.
+  for (const std::size_t inner : std::vector<std::size_t>{0, 1, 3, 4, 5, 9}) {
+    const Matrix a = Uniform(7, inner, 11);
+    const Matrix b = Uniform(inner, 6, 12);
+    const Matrix p = a * b;
+    const Matrix expected = NaiveProduct(a, b);
+    ASSERT_EQ(p.rows(), 7U);
+    ASSERT_EQ(p.cols(), 6U);
+    for (std::size_t i = 0; i < 7; ++i) {
+      for (std::size_t j = 0; j < 6; ++j) EXPECT_EQ(p(i, j), expected(i, j));
+    }
+  }
+  EXPECT_EQ((Matrix(0, 3) * Matrix(3, 2)).rows(), 0U);
+  EXPECT_EQ((Matrix(2, 3) * Matrix(3, 0)).cols(), 0U);
+}
+
+TEST(MatrixTest, InverseOfRandomMatrices) {
+  for (const std::size_t n : std::vector<std::size_t>{1, 2, 5, 17, 40}) {
+    const Matrix a = Uniform(n, n, static_cast<unsigned>(n) + 20);
+    const auto inv = Inverse(a);
+    ASSERT_TRUE(inv.has_value());
+    const Matrix left = *inv * a;
+    const Matrix right = a * *inv;
+    for (std::size_t i = 0; i < n; ++i) {
+      for (std::size_t j = 0; j < n; ++j) {
+        EXPECT_NEAR(left(i, j), i == j ? 1.0 : 0.0, 1e-10);
+        EXPECT_NEAR(right(i, j), i == j ? 1.0 : 0.0, 1e-10);
+      }
+      // Each column agrees with an independent solve against e_i.
+      Vector e(n, 0.0);
+      e[i] = 1.0;
+      const Vector col = Solve(a, e).value();
+      for (std::size_t r = 0; r < n; ++r) EXPECT_EQ((*inv)(r, i), col[r]);
+    }
+  }
+}
+
+TEST(MatrixTest, EigenToleratesRoundingAsymmetry) {
+  // A tiny asymmetry from rounding must not change the decomposition much.
+  Matrix a = RandomSpd(12, 31);
+  a(3, 7) += 1e-13;
+  ExpectValidDecomposition(a, EigenSymmetric(a), 1e-10);
+}
+
+TEST(MatrixTest, CovarianceMatchesTwoPassDefinition) {
+  const Matrix data = Uniform(50, 9, 41);
+  const Matrix cov = CovarianceMatrix(data);
+  for (std::size_t i = 0; i < 9; ++i) {
+    for (std::size_t j = 0; j < 9; ++j) {
+      double mi = 0.0;
+      double mj = 0.0;
+      for (std::size_t r = 0; r < 50; ++r) {
+        mi += data(r, i);
+        mj += data(r, j);
+      }
+      mi /= 50.0;
+      mj /= 50.0;
+      double s = 0.0;
+      for (std::size_t r = 0; r < 50; ++r) {
+        s += (data(r, i) - mi) * (data(r, j) - mj);
+      }
+      EXPECT_NEAR(cov(i, j), s / 49.0, 1e-15);
+      EXPECT_EQ(cov(i, j), cov(j, i));
+    }
+  }
+}
+
 TEST(MatrixTest, CovarianceAndCorrelation) {
   const Matrix data({{1, 2}, {2, 4}, {3, 6}, {4, 8}});
   const Matrix cov = CovarianceMatrix(data);
@@ -194,6 +283,30 @@ TEST(RegressionTest, RecoversCoefficients) {
   EXPECT_NEAR(fit->coefficients[2], -1.0, 1e-12);
   EXPECT_NEAR(fit->r_squared, 1.0, 1e-12);
   EXPECT_NEAR(fit->Predict(Vector{1.0, 1.0}), 1.5, 1e-12);
+}
+
+TEST(RegressionTest, SharedDesignMatchesIndependentFits) {
+  const Matrix x = Uniform(40, 3, 51);
+  const Matrix ys = Uniform(40, 5, 52);
+  for (const bool intercept : {true, false}) {
+    const auto design = OlsDesign::Create(x, intercept);
+    ASSERT_TRUE(design.has_value());
+    EXPECT_EQ(design->num_observations(), 40U);
+    for (std::size_t c = 0; c < ys.cols(); ++c) {
+      const Vector y = ys.Column(c);
+      const LinearRegression shared = design->Fit(y);
+      const LinearRegression alone = MultipleOls(x, y, intercept).value();
+      EXPECT_EQ(shared.has_intercept, intercept);
+      ASSERT_EQ(shared.coefficients.size(), alone.coefficients.size());
+      for (std::size_t k = 0; k < shared.coefficients.size(); ++k) {
+        EXPECT_EQ(shared.coefficients[k], alone.coefficients[k]);
+        EXPECT_EQ(shared.std_errors[k], alone.std_errors[k]);
+      }
+      EXPECT_EQ(shared.r_squared, alone.r_squared);
+      EXPECT_EQ(shared.residual_std_dev, alone.residual_std_dev);
+    }
+  }
+  EXPECT_FALSE(OlsDesign::Create(Uniform(3, 3, 53)).has_value());
 }
 
 TEST(RegressionTest, CollinearRegressorsReturnNullopt) {

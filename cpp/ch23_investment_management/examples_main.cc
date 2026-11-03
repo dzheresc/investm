@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <initializer_list>
 #include <random>
 #include <vector>
 
@@ -56,8 +57,11 @@ void DynamicStrategies() {
   std::vector<double> cppi;
   double mix_turnover = 0.0;
   double cppi_turnover = 0.0;
+  hold.reserve(paths);
+  mix.reserve(paths);
+  cppi.reserve(paths);
+  std::vector<double> r(months);
   for (int k = 0; k < paths; ++k) {
-    std::vector<double> r(months);
     for (double& x : r) x = monthly(rng);
     hold.push_back(ch23::BuyAndHold(r, rf, 0.6).wealth.back());
     const auto m = ch23::ConstantMix(r, rf, 0.6, 0.05);
@@ -67,8 +71,9 @@ void DynamicStrategies() {
     cppi.push_back(c.wealth.back());
     cppi_turnover += c.turnover;
   }
-  auto pct = [](std::vector<double> v, double q) {
-    std::sort(v.begin(), v.end());
+  // Sort each sample once; every percentile is then a lookup.
+  for (auto* v : {&hold, &mix, &cppi}) std::sort(v->begin(), v->end());
+  auto pct = [](const std::vector<double>& v, double q) {
     return v[static_cast<std::size_t>(q * static_cast<double>(v.size() - 1))];
   };
   std::printf("  terminal wealth per $1: %10s %8s %8s %8s %10s\n", "5th pct",

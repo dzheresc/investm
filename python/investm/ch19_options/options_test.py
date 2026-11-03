@@ -15,6 +15,21 @@ def _spec(t):
     return pr.OptionSpec(t, 100.0, 95.0, 0.04, 0.25, 0.75)
 
 
+def _tree(spec, steps):
+    """Plain backward induction, the definition of the European price."""
+    dt = spec.years / steps
+    u = math.exp(spec.volatility * math.sqrt(dt))
+    p = (math.exp((spec.rate - spec.dividend_yield) * dt) - 1 / u) / (u - 1 / u)
+    disc = math.exp(-spec.rate * dt)
+    v = [
+        po.payoff(spec.option_type, spec.strike, spec.spot * u**(2 * j - steps))
+        for j in range(steps + 1)
+    ]
+    for i in range(steps - 1, -1, -1):
+        v = [disc * (p * v[j + 1] + (1 - p) * v[j]) for j in range(i + 1)]
+    return v[0]
+
+
 class PayoffTest(unittest.TestCase):
 
     def test_strategies(self):
@@ -55,6 +70,17 @@ class PricingTest(unittest.TestCase):
             self.assertAlmostEqual(pr.binomial_price(s, 2000, False),
                                    pr.black_scholes_price(s),
                                    delta=5e-3)
+
+    def test_european_matches_backward_induction(self):
+        for t in (CALL, PUT):
+            for strike in (60.0, 95.0, 140.0):
+                for steps in (1, 2, 7, 50, 501):
+                    s = dataclasses.replace(_spec(t),
+                                            strike=strike,
+                                            dividend_yield=0.015)
+                    self.assertAlmostEqual(pr.binomial_price(s, steps, False),
+                                           _tree(s, steps),
+                                           delta=1e-11)
 
     def test_american(self):
         c = _spec(CALL)

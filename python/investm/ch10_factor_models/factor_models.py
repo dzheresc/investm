@@ -44,18 +44,28 @@ def decompose_portfolio_variance(model: FactorModel, factor_cov,
 
 
 def estimate_time_series(returns, factors) -> Optional[FactorModel]:
-    """10.4.1: regress each security (column of T x N) on T x K factors."""
+    """10.4.1: regress each security (column of T x N) on T x K factors.
+
+    Every security shares the regressors, so (X'X)^-1 X' is formed once and
+    applied to all N columns in one product (mirrors OlsDesign in C++).
+    """
     r = np.asarray(returns, float)
     f = np.asarray(factors, float)
-    a, b, s2 = [], [], []
-    for i in range(r.shape[1]):
-        fit = regression.multiple_ols(f, r[:, i])
-        if fit is None:
-            return None
-        a.append(fit.coefficients[0])
-        b.append(fit.coefficients[1:])
-        s2.append(fit.residual_std_dev**2)
-    return FactorModel(np.array(a), np.array(b), np.array(s2))
+    if f.ndim == 1:
+        f = f[:, None]
+    if r.shape[0] != f.shape[0]:
+        raise ValueError("returns and factors cover different periods")
+    design = np.column_stack([np.ones(r.shape[0]), f])
+    n, k = design.shape
+    if n <= k:
+        return None
+    xtx = design.T @ design
+    if np.linalg.matrix_rank(xtx) < k:
+        return None
+    coef = np.linalg.inv(xtx) @ (design.T @ r)  # K x N.
+    resid = r - design @ coef
+    s2 = (resid * resid).sum(axis=0) / (n - k)
+    return FactorModel(coef[0].copy(), coef[1:].T.copy(), s2)
 
 
 def estimate_cross_sectional(

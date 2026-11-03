@@ -14,6 +14,7 @@
 #ifndef CPP_CH07_PORTFOLIO_ANALYSIS_EFFICIENT_SET_H_
 #define CPP_CH07_PORTFOLIO_ANALYSIS_EFFICIENT_SET_H_
 
+#include <cstddef>
 #include <optional>
 #include <span>
 #include <utility>
@@ -78,15 +79,24 @@ Vector ProjectOntoSimplex(std::span<const double> v);
 // z_i = max(0, v_i - theta a_i); theta solves a piecewise-linear monotone
 // equation, found exactly by sorting its breakpoints v_i / a_i. The set is
 // non-empty when some a_i > 0; entries of a may be negative or zero (as for
-// excess returns in the tangency problem). Buffers are reused across calls.
+// excess returns in the tangency problem). Buffers are reused across calls,
+// and so is the sorted order of the breakpoints: inside an iterative solver
+// v changes little between calls, so the previous order is nearly sorted
+// and an insertion sort finishes it in about O(n) predictable comparisons.
 class AffineSimplexProjector {
  public:
   explicit AffineSimplexProjector(std::span<const double> a);
   void Project(std::span<const double> v, std::span<double> out);
 
  private:
+  // Sorts order_ by (keys_[i], i): insertion sort from the last call's
+  // order, falling back to std::sort when the order changed a lot.
+  void SortBreakpoints();
+
   Vector a_;
-  std::vector<std::pair<double, std::size_t>> breakpoints_;
+  Vector keys_;                     // Breakpoint v_i / a_i, by index.
+  std::vector<std::size_t> order_;  // Indices with a_i != 0.
+  bool sorted_before_ = false;
 };
 
 struct QpOptions {

@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <numeric>
+#include <random>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -107,6 +109,32 @@ TEST(SimplexTest, AffineProjectionWithMixedSigns) {
         EXPECT_GE(slack, -1e-12);
       }
     }
+  }
+}
+
+TEST(SimplexTest, ReusedProjectorMatchesFreshOne) {
+  // The projector keeps its sorted breakpoint order between calls. Small
+  // steps, large jumps (which exceed the insertion-sort budget) and ties
+  // must all give exactly what a fresh projector gives.
+  std::mt19937 rng(7);
+  std::normal_distribution<double> z(0.0, 1.0);
+  const std::size_t n = 60;
+  Vector a(n);
+  for (std::size_t i = 0; i < n; ++i) a[i] = i % 9 == 0 ? 0.0 : 0.05 + z(rng);
+  a[1] = 0.5;  // Some a_i > 0 is required.
+  AffineSimplexProjector reused(a);
+  Vector v(n);
+  for (double& x : v) x = z(rng);
+  Vector out(n);
+  Vector expected(n);
+  for (int step = 0; step < 40; ++step) {
+    const double size = step % 10 == 9 ? 5.0 : 0.01;
+    for (double& x : v) x += size * z(rng);
+    if (step == 20) std::fill(v.begin(), v.end(), 0.25);  // All keys tie.
+    reused.Project(v, out);
+    AffineSimplexProjector fresh(a);
+    fresh.Project(v, expected);
+    for (std::size_t i = 0; i < n; ++i) ASSERT_EQ(out[i], expected[i]);
   }
 }
 

@@ -3,8 +3,19 @@
 #
 #   scripts/profile.sh            # everything
 #   scripts/profile.sh memcheck   # one tool: memcheck|callgrind|cachegrind|
-#                                 #           massif|dhat
+#                                 #   massif|dhat|chapters|cases
 #   FILTER=ch08 scripts/profile.sh callgrind   # narrow the benchmark cases
+#   BASELINE=old/reports/cases scripts/profile.sh cases   # compare two runs
+#
+# `chapters` runs callgrind over every chapter's example and test binary and
+# lists instruction counts, so a slow chapter stands out. `cases` profiles
+# each benchmark case on its own (callgrind with cache and branch
+# simulation, one dump per case, setup excluded) and tabulates it with
+# scripts/callgrind_cases.py.
+#
+# The simulated caches are pinned (CACHE_ARGS) to a common desktop layout,
+# so numbers from this sandbox, CI and a Docker Desktop run line up. With
+# valgrind's default, the geometry is read from the host CPU.
 #
 # Builds build/profile (RelWithDebInfo: optimized, with symbols) and writes
 # every report to build/profile/reports. Helgrind and DRD are not run: the
@@ -12,11 +23,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-TOOLS=("${@:-memcheck callgrind cachegrind massif dhat}")
+TOOLS=("${@:-memcheck callgrind cachegrind massif dhat chapters cases}")
 TOOLS=(${TOOLS[*]})
 BUILD=build/profile
 OUT="$BUILD/reports"
 FILTER="${FILTER:-}"
+BASELINE="${BASELINE:-}"
+CACHE_ARGS=(--I1=32768,8,64 --D1=32768,8,64 --LL=8388608,16,64)
 
 cmake -S . -B "$BUILD" -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null
 cmake --build "$BUILD" -j "$(nproc)" >/dev/null
@@ -60,7 +73,7 @@ run_callgrind() {
 
 run_cachegrind() {
   echo "== cachegrind: cache and branch simulation"
-  valgrind --tool=cachegrind --cache-sim=yes --branch-sim=yes \
+  valgrind --tool=cachegrind --cache-sim=yes --branch-sim=yes "${CACHE_ARGS[@]}" \
     --cachegrind-out-file="$OUT/cachegrind.out" \
     "$BENCH" "${BENCH_ARGS[@]}" >/dev/null 2>"$OUT/cachegrind.log"
   cg_annotate "$OUT/cachegrind.out" >"$OUT/cachegrind.txt"
@@ -83,6 +96,38 @@ run_dhat() {
   grep -E 'Total:|At t-gmax:|At t-end:|Reads:|Writes:' "$OUT/dhat.log" |
     sed 's/^==[0-9]*== //'
   echo "   view $OUT/dhat.json at https://nnethercote.github.io/dh_view/dh_view.html"
+}
+
+run_chapters() {
+  echo "== chapters: callgrind instruction counts for every example and test"
+  local dir="$OUT/chapters"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  local exes=("$BUILD"/cpp/ch*/ch*_examples "$BUILD"/cpp/*/*_test)
+  printf '%s\n' "${exes[@]}" | xargs -P "$(nproc)" -I{} sh -c \
+    'valgrind --tool=callgrind --callgrind-out-file="$1/$(basename "$2").out" \
+       "$2" >/dev/null 2>"$1/$(basename "$2").log"' _ "$dir" {}
+  # About 2 M instructions of every run are the dynamic loader and
+  # iostream start-up, so only counts well above that are the chapter's.
+  for f in "$dir"/*.out; do
+    callgrind_annotate "$f" |
+      awk -v n="$(basename "$f" .out)" '/PROGRAM TOTALS/ {
+        gsub(",", "", $1); printf "%-16s %14d\n", n, $1 }'
+  done | sort -k2 -n >"$dir/summary.txt"
+  echo "   the 12 largest (all in $dir/summary.txt):"
+  tail -12 "$dir/summary.txt"
+}
+
+run_cases() {
+  echo "== cases: per-case callgrind with cache and branch simulation"
+  local dir="$OUT/cases"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  valgrind --tool=callgrind --cache-sim=yes --branch-sim=yes "${CACHE_ARGS[@]}" \
+    --callgrind-out-file="$dir/callgrind.out" \
+    "$BENCH" "${BENCH_ARGS[@]}" >/dev/null 2>"$dir/callgrind.log"
+  python3 scripts/callgrind_cases.py "$dir" ${BASELINE:+"$BASELINE"} \
+    --csv="$dir/summary.csv" | tee "$dir/summary.txt"
 }
 
 status=0
