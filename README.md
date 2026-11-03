@@ -1,6 +1,6 @@
 # investm
 
-A code companion to *Investments* by William F. Sharpe, Gordon J. Alexander and Jeffery V. Bailey. It has one module per chapter, written in both **C++20** and **Python 3**, each with worked examples and unit tests.
+A code companion to *Investments* by William F. Sharpe, Gordon J. Alexander and Jeffery V. Bailey. It has one module per chapter, written in both **C++20** and **Python 3**, each with working examples and unit tests.
 
 All code and explanations here are original. They implement the quantitative ideas of each chapter; the book's text is not reproduced. Section numbers follow the book's table of contents, so you can read the two side by side.
 
