@@ -77,8 +77,8 @@ The container mounts `C:\develop` at `/develop`, so build outputs, valgrind repo
 | | 18 | Earnings: Lintner model, naive forecasts, SUE | done |
 | VI. Derivatives | 19 | Options: strategies, parity, binomial, Black-Scholes, Greeks, warrants | done |
 | | 20 | Futures: marking to market, cost of carry, hedging, Black's model | done |
-| VII. Investment management | 21 | Investment companies | planned |
-| | 22 | Financial analysis | planned |
-| | 23 | Investment management | planned |
-| | 24 | Portfolio performance evaluation | planned |
-| | 25 | International investing | planned |
+| VII. Investment management | 21 | Investment companies: NAV, premiums, loads, fee drag | done |
+| | 22 | Financial analysis: ratios, DuPont, technical rules | done |
+| | 23 | Investment management: risk tolerance, asset allocation, CPPI | done |
+| | 24 | Performance evaluation: Sharpe, Treynor, alpha, timing, attribution, style | done |
+| | 25 | International investing: currency risk, parity, hedging, diversification | done |
