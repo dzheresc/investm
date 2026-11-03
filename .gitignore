@@ -1,0 +1,19 @@
+# C++
+build/
+build-*/
+out/
+compile_commands.json
+*.o
+*.a
+callgrind.out.*
+massif.out.*
+cachegrind.out.*
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+# Editors
+.vscode/
+.idea/

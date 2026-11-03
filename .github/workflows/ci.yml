@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cpp:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libgtest-dev libgmock-dev clang clang-format valgrind
+          pip install cpplint
+      - name: clang-format
+        run: find cpp -name '*.h' -o -name '*.cc' | xargs clang-format --dry-run --Werror
+      - name: cpplint
+        run: cpplint --quiet --recursive cpp
+      - name: Configure
+        run: |
+          if [ "${{ matrix.compiler }}" = clang ]; then export CC=clang CXX=clang++; fi
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINVESTM_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -j 4
+      - name: Memcheck examples
+        if: matrix.compiler == 'gcc'
+        run: |
+          for exe in build/cpp/ch*/ch*_examples; do
+            valgrind --error-exitcode=1 --leak-check=full -q "$exe" > /dev/null
+          done
+
+  python:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install pytest pylint yapf
+      - name: yapf
+        run: yapf --diff --recursive --style=google investm
+      - name: pytest
+        run: python -m pytest -q
+      - name: pylint
+        run: pylint --rcfile=.pylintrc investm
+      - name: Run examples
+        run: |
+          for m in investm/ch*/; do python -m "investm.$(basename "$m").examples" > /dev/null; done

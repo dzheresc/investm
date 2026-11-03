@@ -1,0 +1,25 @@
+# Lint settings close to Google's pylintrc, relaxed for short math helpers.
+[MAIN]
+jobs=0
+
+[FORMAT]
+indent-string='    '
+max-line-length=80
+
+[BASIC]
+# Short math names (x, y, d, n, mu, sigma, ...) are idiomatic here.
+good-names-rgxs=^[a-z][a-z0-9_]{0,2}$
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-many-arguments,
+    too-many-positional-arguments,
+    too-many-locals,
+    too-many-instance-attributes,
+    too-many-branches,
+    too-many-statements,
+    duplicate-code,
+    unnecessary-lambda-assignment
