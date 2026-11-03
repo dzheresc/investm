@@ -6,8 +6,10 @@
 //
 // Inputs are generated from a fixed seed, so every run does the same work.
 
+#include <algorithm>
 #include <cmath>
 #include <random>
+#include <string>
 #include <vector>
 
 #include "cpp/bench/bench.h"
