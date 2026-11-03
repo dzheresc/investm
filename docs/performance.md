@@ -4,6 +4,8 @@ This page records two rounds of measure, profile, fix, and re-measure on the
 whole companion. [Round 2](#round-2-callgrind-and-cachegrind-across-all-chapters)
 is the newer one. The tools live in the repository, so the round can be
 repeated after any change.
+[Comparison results](comparison.md) times the same kinds of kernels against
+QuantLib and other open-source libraries.
 
 | Tool | What it does |
 |---|---|

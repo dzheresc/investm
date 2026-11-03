@@ -20,10 +20,15 @@ python/
     examples.py              python -m investm.chNN_<topic>.examples
 docs/chNN_<topic>.md         section-by-section map and notes for both languages
 cpp/bench/                   benchmark driver (investm_bench) for the hot paths
+cpp/compare/                 Google Benchmark comparison against QuantLib
+                             (off by default: -DINVESTM_BUILD_COMPARE=ON)
+scripts/compare/             Python comparison against open-source libraries
 scripts/                     check.sh (CI checks), profile.sh (valgrind suite),
                              callgrind_cases.py (per-case table), docker_profile.ps1
                              (Windows wrapper), bench_python.py (Python timings)
 docs/performance.md          benchmark and profiling results
+docs/comparison.md           comparison with QuantLib, numpy-financial, SciPy,
+                             statsmodels, PyPortfolioOpt, arch, vollib
 docker/Dockerfile            Ubuntu 24.04 toolchain (gcc, cmake, gtest, valgrind, python)
 ```
 
@@ -70,6 +75,19 @@ python3 scripts/bench_python.py                      # Python timings
 ```
 
 On Windows: `powershell -File scripts\docker_profile.ps1` (optionally followed by tool names). It builds the image and runs `docker run --rm -v C:\develop:/develop -w /develop/investm investm-dev scripts/profile.sh`. Reports are written to `build/profile/reports` (for example `C:\develop\investm\build\profile\reports`). [docs/performance.md](docs/performance.md) has the before and after numbers from the profiling round, what valgrind found, and the fixes.
+
+## Comparison with open-source libraries
+
+[docs/comparison.md](docs/comparison.md) times investm against QuantLib (C++ against C++, and through its Python wheel), numpy-financial, SciPy, statsmodels, PyPortfolioOpt, cvxpy, arch and vollib on the same inputs, with each result's error against an exact or 50-digit reference next to its time. [docs/comparison_plan.md](docs/comparison_plan.md) explains which libraries and functions were chosen and how.
+
+```bash
+sudo apt-get install -y libquantlib0-dev libbenchmark-dev
+pip install -r scripts/compare/requirements.txt
+scripts/compare.sh                 # both; results in docs/perf/compare-*.json
+scripts/compare.sh cpp             # or python; QUICK=1 runs each case once
+```
+
+The comparison libraries are not dependencies of investm: the default build and the unit tests do not need them. The Docker image includes them, so on Windows: `docker run --rm -v C:\develop:/develop -w /develop/investm investm-dev scripts/compare.sh`.
 
 ## Chapter map
 
