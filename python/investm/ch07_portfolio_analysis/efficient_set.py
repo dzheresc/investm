@@ -2,7 +2,8 @@
 
 Mirrors cpp/ch07_portfolio_analysis/efficient_set.h. Short sales allowed:
 closed form via A = 1'S^-1 1, B = 1'S^-1 mu, C = mu'S^-1 mu. No short
-sales: accelerated projected gradient on the simplex.
+sales: accelerated projected gradient (with adaptive restart) on the
+simplex.
 """
 
 import dataclasses
@@ -83,35 +84,115 @@ def project_onto_simplex(v: Sequence[float]) -> np.ndarray:
     return np.maximum(v - theta, 0.0)
 
 
+def project_onto_affine_simplex(v: Sequence[float],
+                                a: Sequence[float]) -> np.ndarray:
+    """Euclidean projection onto {z >= 0, a'z = 1}; a may have any signs.
+
+    z_i = max(0, v_i - theta a_i), where theta solves the monotone piecewise
+    linear equation g(theta) = sum a_i max(0, v_i - theta a_i) = 1. Its
+    breakpoints v_i / a_i are swept in order with cumulative sums.
+    """
+    v = np.asarray(v, float)
+    a = np.asarray(a, float)
+    if not np.any(a > 0):
+        raise ValueError("a'z = 1 with z >= 0 needs some a_i > 0")
+    nz = np.nonzero(a)[0]
+    b = v[nz] / a[nz]
+    order = np.argsort(b, kind="stable")
+    idx, b = nz[order], b[order]
+    pos = a > 0
+    # Crossing b_i removes i from the active set if a_i > 0, adds it if < 0.
+    sign = np.where(a[idx] > 0, -1.0, 1.0)
+    s1 = float(a[pos] @ v[pos]) + np.concatenate(
+        ([0.0], np.cumsum(sign * a[idx] * v[idx])))
+    s2 = float(a[pos] @ a[pos]) + np.concatenate(
+        ([0.0], np.cumsum(sign * a[idx]**2)))
+    g = s1[:-1] - b * s2[:-1]  # g just left of each breakpoint.
+    hit = np.nonzero(g <= 1.0)[0]
+    if hit.size:
+        k = hit[0]
+        theta = (s1[k] - 1.0) / s2[k] if s2[k] > 0 else b[k]
+    else:
+        theta = (s1[-1] - 1.0) / s2[-1]
+    return np.maximum(v - theta * a, 0.0)
+
+
+def solve_affine_simplex_qp(cov,
+                            c,
+                            a,
+                            lipschitz: float,
+                            z0=None,
+                            max_iter: int = 20000,
+                            tol: float = 1e-12) -> np.ndarray:
+    """Minimizes z'S z - c'z over {z >= 0, a'z = 1}.
+
+    FISTA with gradient-based adaptive restart (O'Donoghue and Candes),
+    started from z0 (warm start). `lipschitz` bounds 2 lambda_max(S).
+    """
+    cov = np.asarray(cov, float)
+    c = np.asarray(c, float)
+    a = np.asarray(a, float)
+    step = 1.0 / max(lipschitz, 1e-300)
+    if np.all(a == 1.0):  # Plain simplex: the cheaper cumsum projection.
+        project = project_onto_simplex
+    else:
+        project = lambda x: project_onto_affine_simplex(x, a)
+    w = project(np.full(len(c), 1.0 / len(c)) if z0 is None else z0)
+    y = w.copy()
+    t = 1.0
+    for _ in range(max_iter):
+        w_next = project(y - step * (2 * cov @ y - c))
+        t_next = 0.5 * (1 + math.sqrt(1 + 4 * t * t))
+        beta = (t - 1) / t_next
+        if float((y - w_next) @ (w_next - w)) > 0:  # Momentum uphill.
+            t_next, beta = 1.0, 0.0
+        y = w_next + beta * (w_next - w)
+        change = float(np.max(np.abs(w_next - w)))
+        w, t = w_next, t_next
+        if change < tol:
+            break
+    return w
+
+
+def qp_lipschitz(cov) -> float:
+    """2 lambda_max(S): the gradient's Lipschitz constant."""
+    return 2.0 * float(np.linalg.eigvalsh(np.asarray(cov, float))[-1])
+
+
 def optimal_no_short_sales(mu,
                            cov,
                            tau: float,
                            max_iter: int = 20000,
                            tol: float = 1e-12) -> PortfolioPoint:
-    """Maximizes tau mu'w - w'S w over the simplex (FISTA)."""
-    mu = np.asarray(mu, float)
-    cov = np.asarray(cov, float)
+    """Maximizes tau mu'w - w'S w over the simplex (FISTA with restart)."""
     if tau < 0:
         raise ValueError("risk tolerance must be non-negative")
-    step = 1.0 / (2.0 * max(np.linalg.eigvalsh(cov)[-1], 1e-300))
-    n = len(mu)
-    w = np.full(n, 1.0 / n)
-    y = w.copy()
-    t = 1.0
-    for _ in range(max_iter):
-        w_next = project_onto_simplex(y - step * (2 * cov @ y - tau * mu))
-        t_next = 0.5 * (1 + math.sqrt(1 + 4 * t * t))
-        y = w_next + (t - 1) / t_next * (w_next - w)
-        change = float(np.max(np.abs(w_next - w)))
-        w, t = w_next, t_next
-        if change < tol:
-            break
+    mu = np.asarray(mu, float)
+    cov = np.asarray(cov, float)
+    w = solve_affine_simplex_qp(cov,
+                                tau * mu,
+                                np.ones(len(mu)),
+                                qp_lipschitz(cov),
+                                max_iter=max_iter,
+                                tol=tol)
     return evaluate(w, mu, cov)
 
 
 def efficient_set_no_short_sales(mu, cov,
                                  taus: Sequence[float]) -> list[PortfolioPoint]:
-    return [optimal_no_short_sales(mu, cov, t) for t in taus]
+    """Sweeps tau; one Lipschitz constant, each solve warm-starts the next."""
+    mu = np.asarray(mu, float)
+    cov = np.asarray(cov, float)
+    lip = qp_lipschitz(cov)
+    ones = np.ones(len(mu))
+    w = None
+    points = []
+    for tau in taus:
+        if tau < 0:
+            raise ValueError("risk tolerance must be non-negative")
+        w = solve_affine_simplex_qp(cov, tau * mu, ones, lip, w)
+        points.append(evaluate(w, mu, cov))
+    return points
 
 
 def two_asset_min_variance_weight(s1: float, s2: float, rho: float) -> float:

@@ -60,15 +60,16 @@ def binomial_price(spec: OptionSpec, steps: int, american: bool) -> float:
         raise ValueError("too few steps for these parameters")
     disc = math.exp(-spec.rate * dt)
     sign = 1.0 if spec.option_type == OptionType.CALL else -1.0
-    j = np.arange(steps + 1)
-    s = spec.spot * u**j * d**(steps - j)
+    # Node (i, j) has price S u^(2j - i): one step back multiplies by u, so
+    # the early-exercise check reuses the terminal prices without powers.
+    s = spec.spot * u**(2.0 * np.arange(steps + 1) - steps)
     v = np.maximum(sign * (s - spec.strike), 0.0)
+    pu, pd = disc * p, disc * (1 - p)
     for i in range(steps - 1, -1, -1):
-        v = disc * (p * v[1:i + 2] + (1 - p) * v[:i + 1])
+        v = pu * v[1:i + 2] + pd * v[:i + 1]
         if american:
-            j = np.arange(i + 1)
-            s = spec.spot * u**j * d**(i - j)
-            v = np.maximum(v, sign * (s - spec.strike))
+            s = s[:i + 1] * u
+            np.maximum(v, sign * (s - spec.strike), out=v)
     return float(v[0])
 
 

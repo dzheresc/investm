@@ -44,11 +44,22 @@ def tangency_portfolio(mu, cov, rf: float) -> Optional[es.PortfolioPoint]:
     return es.evaluate(z / total, mu, cov)
 
 
-def tangency_portfolio_no_short_sales(mu, cov, rf: float) -> es.PortfolioPoint:
-    """Golden-section search for the max-Sharpe no-short-sales portfolio."""
+def _tangency_by_search(mu, cov, rf: float) -> es.PortfolioPoint:
+    """Golden-section search on log tau; only when no asset beats rf."""
+    mu = np.asarray(mu, float)
+    cov = np.asarray(cov, float)
+    lip = es.qp_lipschitz(cov)
+    ones = np.ones(len(mu))
+    state = {"w": None}
+
+    def solve(log_tau: float) -> es.PortfolioPoint:
+        state["w"] = es.solve_affine_simplex_qp(cov,
+                                                math.exp(log_tau) * mu, ones,
+                                                lip, state["w"])
+        return es.evaluate(state["w"], mu, cov)
 
     def sharpe(log_tau: float) -> float:
-        p = es.optimal_no_short_sales(mu, cov, math.exp(log_tau))
+        p = solve(log_tau)
         return (p.expected_return - rf) / p.std_dev if p.std_dev > 0 else -1e300
 
     inv_phi = (math.sqrt(5) - 1) / 2
@@ -66,7 +77,23 @@ def tangency_portfolio_no_short_sales(mu, cov, rf: float) -> es.PortfolioPoint:
             hi, x2, f2 = x2, x1, f1
             x1 = hi - inv_phi * (hi - lo)
             f1 = sharpe(x1)
-    return es.optimal_no_short_sales(mu, cov, math.exp(0.5 * (lo + hi)))
+    return solve(0.5 * (lo + hi))
+
+
+def tangency_portfolio_no_short_sales(mu, cov, rf: float) -> es.PortfolioPoint:
+    """Max-Sharpe long-only portfolio.
+
+    Solved directly as min z'S z s.t. (mu - rf)'z = 1, z >= 0, then
+    w = z / 1'z. Falls back to a search when no asset beats rf.
+    """
+    mu = np.asarray(mu, float)
+    cov = np.asarray(cov, float)
+    excess = mu - rf
+    if np.max(excess) <= 0:
+        return _tangency_by_search(mu, cov, rf)
+    z = es.solve_affine_simplex_qp(cov, np.zeros(len(mu)), excess,
+                                   es.qp_lipschitz(cov), np.zeros(len(mu)))
+    return es.evaluate(z / z.sum(), mu, cov)
 
 
 def optimal_fraction_in_tangency(tangency: es.PortfolioPoint, rf: float,

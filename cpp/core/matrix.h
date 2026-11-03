@@ -1,7 +1,7 @@
 // Small dense linear algebra for portfolio problems.
 //
 // Portfolios in this companion have tens of assets, not thousands, so a
-// straightforward row-major matrix with LU, Cholesky and Jacobi
+// straightforward row-major matrix with LU, Cholesky and Householder + QL
 // eigen-decomposition is all that is needed and keeps the code dependency
 // free. Used from Chapter 6 onward (covariance matrices, efficient sets,
 // factor models).
@@ -41,6 +41,11 @@ class Matrix {
     return data_[r * cols_ + c];
   }
 
+  // Contiguous view of row r (storage is row-major).
+  std::span<const double> RowSpan(std::size_t r) const {
+    return {data_.data() + r * cols_, cols_};
+  }
+
   Vector Row(std::size_t r) const;
   Vector Column(std::size_t c) const;
   Matrix Transpose() const;
@@ -53,6 +58,9 @@ class Matrix {
 
 Matrix operator*(const Matrix& a, const Matrix& b);
 Vector operator*(const Matrix& a, std::span<const double> x);
+// y = A x into caller-owned storage (no allocation); y must not alias x.
+void MultiplyInto(const Matrix& a, std::span<const double> x,
+                  std::span<double> y);
 Matrix operator+(const Matrix& a, const Matrix& b);
 Matrix operator-(const Matrix& a, const Matrix& b);
 Matrix operator*(double s, const Matrix& a);
@@ -74,7 +82,8 @@ std::optional<Matrix> Inverse(const Matrix& a);
 // positive definite.
 std::optional<Matrix> Cholesky(const Matrix& a);
 
-// Eigen-decomposition of a symmetric matrix by cyclic Jacobi rotations.
+// Eigen-decomposition of a symmetric matrix: Householder reduction to
+// tridiagonal form followed by implicit QL iterations.
 // Eigenvalues are sorted in decreasing order; column k of `vectors` is the
 // unit eigenvector for values[k].
 struct SymmetricEigen {
@@ -82,6 +91,13 @@ struct SymmetricEigen {
   Matrix vectors;
 };
 SymmetricEigen EigenSymmetric(const Matrix& a);
+
+// Largest eigenvalue of a symmetric positive semidefinite matrix by power
+// iteration, O(n^2) per step. The value returned is padded by the final
+// residual, so it does not underestimate the eigenvalue found; that makes
+// it a safe Lipschitz constant for gradient methods.
+double LargestEigenvalue(const Matrix& a, int max_iterations = 1000,
+                         double tolerance = 1e-10);
 
 // Sample covariance matrix of the columns of `data` (rows = observations).
 Matrix CovarianceMatrix(const Matrix& data, int ddof = 1);
