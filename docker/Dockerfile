@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir pytest pylint yapf cpplint
+    && /opt/venv/bin/pip install --no-cache-dir numpy pytest pylint yapf cpplint
 ENV PATH="/opt/venv/bin:${PATH}"
 
 WORKDIR /develop/investm

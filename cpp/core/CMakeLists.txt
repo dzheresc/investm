@@ -1,6 +1,6 @@
 investm_library(investm_core
-  SRCS stats.cc table.cc)
+  SRCS matrix.cc regression.cc stats.cc table.cc)
 
 investm_test(core_test
-  SRCS root_find_test.cc stats_test.cc
+  SRCS matrix_test.cc root_find_test.cc stats_test.cc
   DEPS investm_core)
