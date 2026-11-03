@@ -68,10 +68,10 @@ The container mounts `C:\develop` at `/develop`, so build outputs, valgrind repo
 | III. Equilibrium | 9 | CAPM: CML, SML, beta | done |
 | | 10 | Factor models | done |
 | | 11 | Arbitrage pricing theory | done |
-| | 12 | Taxes and inflation | planned |
-| IV. Fixed income | 13 | Fixed-income securities | planned |
-| | 14 | Bond analysis: duration, convexity, valuation | planned |
-| | 15 | Bond portfolio management: immunization | planned |
+| | 12 | Taxes and inflation | done |
+| IV. Fixed income | 13 | Fixed-income securities: day counts, accrued interest, callables | done |
+| | 14 | Bond analysis: duration, convexity, default risk, credit scoring | done |
+| | 15 | Bond portfolio management: horizon analysis, immunization, dedication, swaps | done |
 | V. Common stocks | 16 | Common stocks | planned |
 | | 17 | Valuation of common stocks: dividend discount models | planned |
 | | 18 | Earnings | planned |
