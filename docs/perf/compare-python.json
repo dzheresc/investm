@@ -1,0 +1,763 @@
+{
+ "context": {
+  "host": "Linux-6.18.44-fc-v230-x86_64-with-glibc2.39",
+  "cpu_count": 4,
+  "date": "2026-11-03",
+  "versions": {
+   "python": "3.13.18",
+   "numpy": "2.5.3",
+   "scipy": "1.18.1",
+   "QuantLib": "1.44",
+   "numpy-financial": "1.1.0",
+   "statsmodels": "0.15.0",
+   "pyportfolioopt": "1.6.0",
+   "arch": "8.0.0",
+   "vollib": "1.0.11",
+   "cvxpy": "1.9.3",
+   "pandas": "3.0.5",
+   "mpmath": "1.4.1"
+  }
+ },
+ "cases": [
+  {
+   "case": "bsm_price",
+   "chapter": 19,
+   "title": "BSM call, S=42 K=40 r=10% sigma=20% T=0.5",
+   "reference": "closed form in mpmath (50 digits)",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 1.6693477399996936e-06,
+     "value": "4.759422393",
+     "error": 1.7284389070717455e-15,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 2.563966970000138e-07,
+     "value": "4.759422393",
+     "error": 2.6166173267718707e-15,
+     "note": "blackFormula (function, no instrument objects)"
+    },
+    {
+     "library": "vollib",
+     "seconds": 3.3536154700004773e-06,
+     "value": "4.759422393",
+     "error": -1.8242747717287554e-15,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "bsm_greeks",
+   "chapter": 19,
+   "title": "Price and five Greeks of the same call, one call for all six",
+   "reference": "closed forms in mpmath; error is the largest relative error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 1.7598417950000567e-06,
+     "value": "delta 0.779131, theta -4.5591",
+     "error": 3.6316148565853916e-16,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 5.6198360400003365e-06,
+     "value": "delta 0.779131, theta -4.5591",
+     "error": 1.2374843150441628e-15,
+     "note": "BlackCalculator"
+    },
+    {
+     "library": "vollib",
+     "seconds": 1.5077371300003506e-05,
+     "value": "delta 0.779131, theta -4.5591",
+     "error": 3.832975140977357e-16,
+     "note": "six separate calls; rescaled to per 1.00 and per year"
+    }
+   ]
+  },
+  {
+   "case": "implied_vol",
+   "chapter": 19,
+   "title": "Implied vol of a call at 1.875, S=21 K=20 r=10% T=0.25",
+   "reference": "mpmath root of the 50-digit price",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 6.946038979999685e-05,
+     "value": "0.234512914",
+     "error": 8.979117054455438e-16,
+     "note": "Brent, tolerance 1e-12"
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 1.4900650350000432e-06,
+     "value": "0.2345124084",
+     "error": -5.056433801289651e-07,
+     "note": "blackFormulaImpliedStdDev, default accuracy"
+    },
+    {
+     "library": "QuantLib (1e-12)",
+     "seconds": 2.225515520000272e-06,
+     "value": "0.234512914",
+     "error": -9.53671844867264e-13,
+     "note": ""
+    },
+    {
+     "library": "vollib",
+     "seconds": 1.5081746800001383e-05,
+     "value": "0.234512914",
+     "error": -6.286449534140465e-16,
+     "note": "Let's Be Rational"
+    }
+   ]
+  },
+  {
+   "case": "crr_american_100",
+   "chapter": 19,
+   "title": "American put on a 100-step CRR tree, S=K=50 r=10% sigma=40% T=5/12",
+   "reference": "mean of 20,000- and 20,001-step trees, 4.284230",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.0004843818680001277,
+     "value": "4.278059",
+     "error": -0.006171678543554826,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 6.805919879998328e-05,
+     "value": "4.278146",
+     "error": -0.006084157040893601,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "crr_american_1000",
+   "chapter": 19,
+   "title": "American put on a 1000-step CRR tree, S=K=50 r=10% sigma=40% T=5/12",
+   "reference": "mean of 20,000- and 20,001-step trees, 4.284230",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.005875773919999574,
+     "value": "4.283627",
+     "error": -0.0006030121010072165,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 0.004780313420001221,
+     "value": "4.283636",
+     "error": -0.0005942409021342243,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "crr_european_1000",
+   "chapter": 19,
+   "title": "European put on a 1,000-step CRR tree, same option",
+   "reference": "Black-Scholes put in mpmath",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 3.660650229999192e-05,
+     "value": "4.074708",
+     "error": -0.001273234749705023,
+     "note": "closed-form binomial sum, O(n)"
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 0.000830348350000122,
+     "value": "4.074719",
+     "error": -0.001261849874045919,
+     "note": "backward induction, O(n^2)"
+    }
+   ]
+  },
+  {
+   "case": "norm_cdf",
+   "chapter": 6,
+   "title": "N(x) at one point (x = -1.5); error over 1,001 points on [-8, 8]",
+   "reference": "mpmath ncdf; error is the largest relative error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 1.1919845750003332e-07,
+     "value": "0.06680720127",
+     "error": 9.04308944500116e-15,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 4.5921630599991657e-07,
+     "value": "0.06680720127",
+     "error": 1.27513161859702e-07,
+     "note": ""
+    },
+    {
+     "library": "SciPy (special.ndtr)",
+     "seconds": 1.2016904749998503e-07,
+     "value": "0.06680720127",
+     "error": 9.464247761860114e-15,
+     "note": ""
+    },
+    {
+     "library": "SciPy (stats.norm.cdf)",
+     "seconds": 3.615187340001285e-05,
+     "value": "0.06680720127",
+     "error": 9.464247761860114e-15,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "norm_inv",
+   "chapter": 6,
+   "title": "Inverse N(p) at p = 0.05 (95% VaR); error over p in [1e-10, 0.5]",
+   "reference": "mpmath; error is the largest absolute error in z",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 1.562652210000124e-07,
+     "value": "-1.644853627",
+     "error": 3.1451708496367178e-15,
+     "note": "statistics.NormalDist (Wichura AS241)"
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 4.5667145800007345e-07,
+     "value": "-1.644853625",
+     "error": 5.6212647862453525e-09,
+     "note": ""
+    },
+    {
+     "library": "SciPy (special.ndtri)",
+     "seconds": 1.449359819999927e-07,
+     "value": "-1.644853627",
+     "error": 1.1789961616390999e-15,
+     "note": ""
+    },
+    {
+     "library": "SciPy (stats.norm.ppf)",
+     "seconds": 4.9777383799983e-05,
+     "value": "-1.644853627",
+     "error": 1.1789961616390999e-15,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "bond_price",
+   "chapter": 5,
+   "title": "10-year 8% semiannual bond at a 9% yield, on a coupon date",
+   "reference": "exact rational sum",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 1.8997027599999683e-06,
+     "value": "93.49603177",
+     "error": -3.67923237346327e-15,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 6.546586579997893e-06,
+     "value": "93.49603177",
+     "error": 2.236944430697688e-13,
+     "note": ""
+    },
+    {
+     "library": "numpy-financial (pv)",
+     "seconds": 8.626746459999595e-06,
+     "value": "93.49603177",
+     "error": 1.0531622341738735e-14,
+     "note": "annuity closed form"
+    },
+    {
+     "library": "numpy-financial (npv)",
+     "seconds": 4.876550419999148e-06,
+     "value": "93.49603177",
+     "error": 8.158589591774876e-14,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "bond_yield",
+   "chapter": 5,
+   "title": "Yield to maturity of the same bond from its price",
+   "reference": "mpmath root",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 3.707012960001066e-05,
+     "value": "0.09",
+     "error": 7.96469566093931e-18,
+     "note": "Brent, tolerance 1e-12"
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 8.055282400000578e-05,
+     "value": "0.09",
+     "error": 3.6878717866411517e-16,
+     "note": "bondYield, default accuracy 1e-10"
+    },
+    {
+     "library": "QuantLib (1e-12)",
+     "seconds": 8.068634580004072e-05,
+     "value": "0.09",
+     "error": 3.6878717866411517e-16,
+     "note": ""
+    },
+    {
+     "library": "numpy-financial",
+     "seconds": 8.982423899997229e-05,
+     "value": "0.09",
+     "error": 1.1872804672298034e-12,
+     "note": "rate (Newton), default tol 1e-6"
+    },
+    {
+     "library": "numpy-financial (tol 1e-12)",
+     "seconds": 0.00010282810399996833,
+     "value": "0.09",
+     "error": 7.96469566093931e-18,
+     "note": ""
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.00013025624900001276,
+     "value": "0.09",
+     "error": 3.5720271276568224e-17,
+     "note": "brentq (xtol 1e-12) on numpy-financial's pv"
+    }
+   ]
+  },
+  {
+   "case": "duration",
+   "chapter": 14,
+   "title": "Macaulay and modified duration and convexity of the same bond",
+   "reference": "exact rationals; error is the largest relative error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 9.963107149997086e-06,
+     "value": "6.954496, 6.655020, 58.3185",
+     "error": 5.182591986429436e-16,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 2.2163232299999435e-05,
+     "value": "6.954496, 6.655020, 58.3185",
+     "error": 2.7747185589618377e-16,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "treasury_clean_price",
+   "chapter": 13,
+   "title": "7% Treasury maturing 2036-11-15, settled 2027-03-01, act/act, accrued interest and clean price at 6.5%",
+   "reference": "mpmath street-convention price; error is the larger absolute error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 6.483319720000509e-05,
+     "value": "2.049724, 103.544528",
+     "error": 3.4536419380820556e-14,
+     "note": ""
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 8.778243019996807e-06,
+     "value": "2.049724, 103.544528",
+     "error": 1.2178298248640148e-13,
+     "note": "ActualActual(ISMA) with the coupon schedule"
+    }
+   ]
+  },
+  {
+   "case": "bootstrap",
+   "chapter": 5,
+   "title": "Spot curve from 30 annual-coupon bonds priced off a known curve",
+   "reference": "the known curve; error is the largest discount-factor error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 1.4030437650001205e-05,
+     "value": "d30 = 0.23170542",
+     "error": 2.220446049250313e-16,
+     "note": "one linear solve per maturity"
+    },
+    {
+     "library": "QuantLib",
+     "seconds": 0.0012964833149999321,
+     "value": "d30 = 0.23170542",
+     "error": 1.609823385706477e-15,
+     "note": "PiecewiseLogLinearDiscount on FixedRateBondHelper"
+    }
+   ]
+  },
+  {
+   "case": "irr",
+   "chapter": 24,
+   "title": "IRR of an 11-period stream with sign changes (a dollar-weighted return)",
+   "reference": "mpmath root",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 2.0207478699990134e-05,
+     "value": "0.1253528785",
+     "error": -5.414424556415086e-19,
+     "note": "Brent on [-0.99, 1], tolerance 1e-12"
+    },
+    {
+     "library": "numpy-financial",
+     "seconds": 5.569709100000182e-05,
+     "value": "0.1253528785",
+     "error": 1.9423488506383824e-15,
+     "note": "eigenvalues of the companion matrix"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 7.820834899998772e-05,
+     "value": "0.1253528785",
+     "error": 1.759649349785309e-14,
+     "note": "brentq on numpy-financial's npv"
+    }
+   ]
+  },
+  {
+   "case": "tangency",
+   "chapter": 8,
+   "title": "Tangency portfolio, 20 assets, short sales allowed",
+   "reference": "closed form S^-1 (mu - rf) with numpy; error is the Sharpe ratio shortfall",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 5.7279815199990484e-05,
+     "value": "Sharpe 1.9524663930",
+     "error": 0.0,
+     "note": ""
+    },
+    {
+     "library": "PyPortfolioOpt",
+     "seconds": 0.006112334179997561,
+     "value": "Sharpe 1.9524663930",
+     "error": -6.661338147750939e-16,
+     "note": "max_sharpe through cvxpy (Clarabel)"
+    }
+   ]
+  },
+  {
+   "case": "tangency_long_only_20",
+   "chapter": 8,
+   "title": "Max-Sharpe portfolio, 20 assets, no short sales",
+   "reference": "best Sharpe ratio found by any library; error is the shortfall",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.0037634002999993752,
+     "value": "Sharpe 1.7440267828",
+     "error": 2.220446049250313e-16,
+     "note": "one QP: min z'Sz, (mu - rf)'z = 1, z >= 0"
+    },
+    {
+     "library": "PyPortfolioOpt",
+     "seconds": 0.006516081380000287,
+     "value": "Sharpe 1.7440267828",
+     "error": 0.0,
+     "note": "max_sharpe (same transformation, cvxpy)"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.0033808386100008646,
+     "value": "Sharpe 1.7440267828",
+     "error": 0.0,
+     "note": "SLSQP on -Sharpe, analytic gradient"
+    }
+   ]
+  },
+  {
+   "case": "optimal_long_only_20",
+   "chapter": 7,
+   "title": "Optimal portfolio for risk tolerance 0.3 (max tau mu'w - w'Sw), 20 assets, no short sales",
+   "reference": "best objective found by any library; error is the shortfall",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.0009277614950008228,
+     "value": "objective 0.034653192785",
+     "error": 0.0,
+     "note": "FISTA with adaptive restart"
+    },
+    {
+     "library": "PyPortfolioOpt",
+     "seconds": 0.006374346899997363,
+     "value": "objective 0.034653192785",
+     "error": 6.938893903907228e-18,
+     "note": "max_quadratic_utility, risk aversion 2 / tau"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.00325163454000176,
+     "value": "objective 0.034653192785",
+     "error": 5.551115123125783e-17,
+     "note": "SLSQP, analytic gradient"
+    }
+   ]
+  },
+  {
+   "case": "tangency_long_only_100",
+   "chapter": 8,
+   "title": "Max-Sharpe portfolio, 100 assets, no short sales",
+   "reference": "best Sharpe ratio found by any library; error is the shortfall",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.010878901199998837,
+     "value": "Sharpe 6.9170570715",
+     "error": 0.0,
+     "note": "one QP: min z'Sz, (mu - rf)'z = 1, z >= 0"
+    },
+    {
+     "library": "PyPortfolioOpt",
+     "seconds": 0.023734187899981406,
+     "value": "Sharpe 6.9170570715",
+     "error": 8.881784197001252e-16,
+     "note": "max_sharpe (same transformation, cvxpy)"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.25307034399997974,
+     "value": "Sharpe 6.9170570713",
+     "error": 2.1662049931592264e-10,
+     "note": "SLSQP on -Sharpe, analytic gradient"
+    }
+   ]
+  },
+  {
+   "case": "optimal_long_only_100",
+   "chapter": 7,
+   "title": "Optimal portfolio for risk tolerance 0.3 (max tau mu'w - w'Sw), 100 assets, no short sales",
+   "reference": "best objective found by any library; error is the shortfall",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.0022838123700012146,
+     "value": "objective 0.043435898396",
+     "error": 0.0,
+     "note": "FISTA with adaptive restart"
+    },
+    {
+     "library": "PyPortfolioOpt",
+     "seconds": 0.009573748100001467,
+     "value": "objective 0.043435898396",
+     "error": 2.0816681711721685e-17,
+     "note": "max_quadratic_utility, risk aversion 2 / tau"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.09687492850002855,
+     "value": "objective 0.043435898396",
+     "error": 1.8735013540549517e-15,
+     "note": "SLSQP, analytic gradient"
+    }
+   ]
+  },
+  {
+   "case": "implied_returns",
+   "chapter": 9,
+   "title": "CAPM-implied expected returns (reverse optimization), 20 assets",
+   "reference": "mpmath; error is the largest absolute error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 4.125640800002657e-06,
+     "value": "first 0.08701142",
+     "error": 3.164047537681085e-17,
+     "note": ""
+    },
+    {
+     "library": "PyPortfolioOpt",
+     "seconds": 0.00026242501499996253,
+     "value": "first 0.08701142",
+     "error": 2.3870675854446972e-17,
+     "note": "market_implied_prior_returns, delta = premium / var(market)"
+    }
+   ]
+  },
+  {
+   "case": "style_analysis",
+   "chapter": 24,
+   "title": "Sharpe style analysis, 120 months x 8 styles (weights >= 0, sum 1)",
+   "reference": "smallest tracking variance found; error is the excess",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.0008719013399991126,
+     "value": "tracking var 2.6960368037e-05",
+     "error": 0.0,
+     "note": "FISTA with adaptive restart"
+    },
+    {
+     "library": "cvxpy",
+     "seconds": 0.005749958500000502,
+     "value": "tracking var 2.6960368037e-05",
+     "error": 3.3881317890172014e-21,
+     "note": "sum_squares QP, Clarabel"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.0007622478339999361,
+     "value": "tracking var 2.6960368037e-05",
+     "error": 4.279210449528725e-18,
+     "note": "SLSQP, analytic gradient"
+    }
+   ]
+  },
+  {
+   "case": "market_model",
+   "chapter": 7,
+   "title": "Market model alpha and beta, 60 months",
+   "reference": "exact rational least squares; error is the larger absolute error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 7.487988440002483e-05,
+     "value": "beta 1.4533491488",
+     "error": 6.488863841957935e-17,
+     "note": ""
+    },
+    {
+     "library": "statsmodels",
+     "seconds": 0.00012415940149992366,
+     "value": "beta 1.4533491488",
+     "error": 6.012451763555145e-16,
+     "note": "OLS(...).fit(), all statistics"
+    },
+    {
+     "library": "SciPy",
+     "seconds": 0.00040555927399987015,
+     "value": "beta 1.4533491488",
+     "error": 2.8693324334461066e-16,
+     "note": "stats.linregress"
+    },
+    {
+     "library": "NumPy",
+     "seconds": 2.4908273699998063e-05,
+     "value": "beta 1.4533491488",
+     "error": 8.232897812805458e-16,
+     "note": "polyfit, degree 1"
+    }
+   ]
+  },
+  {
+   "case": "treynor_mazuy",
+   "chapter": 24,
+   "title": "Treynor-Mazuy timing regression, 120 months",
+   "reference": "exact rational least squares; error is the largest coefficient error",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.00010360307550001835,
+     "value": "timing 1.975822, t 5.033555",
+     "error": 5.177791130039067e-16,
+     "note": ""
+    },
+    {
+     "library": "statsmodels",
+     "seconds": 0.00017261212099992917,
+     "value": "timing 1.975822, t 5.033555",
+     "error": 4.733548052698361e-16,
+     "note": ""
+    }
+   ]
+  },
+  {
+   "case": "runs_test",
+   "chapter": 4,
+   "title": "Wald-Wolfowitz runs test z on the signs of 500 returns",
+   "reference": "mpmath",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 9.596904539998832e-05,
+     "value": "-1.155307993",
+     "error": 4.972864862097081e-16,
+     "note": ""
+    },
+    {
+     "library": "statsmodels",
+     "seconds": 9.769565960000364e-05,
+     "value": "-1.155307993",
+     "error": 4.972864862097081e-16,
+     "note": "runstest_1samp(cutoff=0, no continuity correction)"
+    }
+   ]
+  },
+  {
+   "case": "variance_ratio",
+   "chapter": 4,
+   "title": "Variance ratio VR(4) of 1,000 daily log returns, overlapping sums",
+   "reference": "the book's definition in mpmath (sample variances, no bias correction)",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.0008729171939999105,
+     "value": "1.027713529",
+     "error": -3.8692484995655146e-16,
+     "note": ""
+    },
+    {
+     "library": "arch",
+     "seconds": 0.00036599481400003244,
+     "value": "1.024633441",
+     "error": -0.0030800881916911976,
+     "note": "Lo-MacKinlay: drift from end points, divides by n"
+    },
+    {
+     "library": "arch (debiased)",
+     "seconds": 0.0003848677600001338,
+     "value": "1.030812122",
+     "error": 0.003098593478380986,
+     "note": "Lo-MacKinlay with the bias correction"
+    }
+   ]
+  },
+  {
+   "case": "autocorrelation",
+   "chapter": 4,
+   "title": "Lag-1 autocorrelation of 500 returns",
+   "reference": "mpmath, full-sample mean and variance",
+   "results": [
+    {
+     "library": "investm",
+     "seconds": 0.00029155233400001633,
+     "value": "0.100330855",
+     "error": -1.1218631719183256e-17,
+     "note": ""
+    },
+    {
+     "library": "statsmodels",
+     "seconds": 6.225841160003255e-05,
+     "value": "0.100330855",
+     "error": -2.5096419526997714e-17,
+     "note": ""
+    },
+    {
+     "library": "pandas",
+     "seconds": 0.0001617847405000248,
+     "value": "0.1005688623",
+     "error": 0.00023800731543510966,
+     "note": "Pearson correlation of x[1:] and x[:-1], a different estimator"
+    }
+   ]
+  }
+ ]
+}

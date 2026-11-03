@@ -13,6 +13,9 @@ endif()
 option(INVESTM_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(INVESTM_BUILD_TESTS "Build the GoogleTest unit tests" ON)
 option(INVESTM_BUILD_EXAMPLES "Build the worked-example programs" ON)
+option(INVESTM_BUILD_COMPARE
+  "Build the QuantLib comparison benchmarks (needs QuantLib, Google Benchmark)"
+  OFF)
 
 include(cmake/investm.cmake)
 

@@ -60,3 +60,21 @@ jobs:
       - name: Run examples
         run: |
           for m in investm/ch*/; do python -m "investm.$(basename "$m").examples" > /dev/null; done
+
+  # Smoke test of the open-source comparison (docs/comparison.md): builds the
+  # QuantLib benchmark binary and runs every case once in C++ and Python.
+  # Timings on shared runners are not meaningful; this only keeps it working.
+  compare:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install QuantLib, Google Benchmark and the Python libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libquantlib0-dev libbenchmark-dev
+          pip install numpy -r scripts/compare/requirements.txt
+      - name: Run every case once
+        run: QUICK=1 scripts/compare.sh
