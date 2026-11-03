@@ -27,21 +27,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 1.6693477399996936e-06,
+     "seconds": 8.808248440000171e-07,
      "value": "4.759422393",
-     "error": 1.7284389070717455e-15,
+     "error": -5.376988450529256e-15,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 2.563966970000138e-07,
+     "seconds": 2.62841851000303e-07,
      "value": "4.759422393",
      "error": 2.6166173267718707e-15,
      "note": "blackFormula (function, no instrument objects)"
     },
     {
      "library": "vollib",
-     "seconds": 3.3536154700004773e-06,
+     "seconds": 3.4355697099999816e-06,
      "value": "4.759422393",
      "error": -1.8242747717287554e-15,
      "note": ""
@@ -56,21 +56,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 1.7598417950000567e-06,
+     "seconds": 1.7256953399987651e-06,
      "value": "delta 0.779131, theta -4.5591",
      "error": 3.6316148565853916e-16,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 5.6198360400003365e-06,
+     "seconds": 5.533125480005765e-06,
      "value": "delta 0.779131, theta -4.5591",
      "error": 1.2374843150441628e-15,
      "note": "BlackCalculator"
     },
     {
      "library": "vollib",
-     "seconds": 1.5077371300003506e-05,
+     "seconds": 1.553708630001438e-05,
      "value": "delta 0.779131, theta -4.5591",
      "error": 3.832975140977357e-16,
      "note": "six separate calls; rescaled to per 1.00 and per year"
@@ -85,28 +85,28 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 6.946038979999685e-05,
+     "seconds": 6.8118522399981885e-06,
      "value": "0.234512914",
-     "error": 8.979117054455438e-16,
-     "note": "Brent, tolerance 1e-12"
+     "error": 8.14644978598657e-16,
+     "note": "Newton on vega inside a bracket"
     },
     {
      "library": "QuantLib",
-     "seconds": 1.4900650350000432e-06,
+     "seconds": 1.4785427499987235e-06,
      "value": "0.2345124084",
      "error": -5.056433801289651e-07,
      "note": "blackFormulaImpliedStdDev, default accuracy"
     },
     {
      "library": "QuantLib (1e-12)",
-     "seconds": 2.225515520000272e-06,
+     "seconds": 2.249072640001941e-06,
      "value": "0.234512914",
      "error": -9.53671844867264e-13,
      "note": ""
     },
     {
      "library": "vollib",
-     "seconds": 1.5081746800001383e-05,
+     "seconds": 1.4888097850007397e-05,
      "value": "0.234512914",
      "error": -6.286449534140465e-16,
      "note": "Let's Be Rational"
@@ -121,14 +121,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.0004843818680001277,
+     "seconds": 0.0005442040119996818,
      "value": "4.278059",
      "error": -0.006171678543554826,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 6.805919879998328e-05,
+     "seconds": 6.931208719997812e-05,
      "value": "4.278146",
      "error": -0.006084157040893601,
      "note": ""
@@ -143,14 +143,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.005875773919999574,
+     "seconds": 0.0065135864399962886,
      "value": "4.283627",
      "error": -0.0006030121010072165,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 0.004780313420001221,
+     "seconds": 0.0046316174399998996,
      "value": "4.283636",
      "error": -0.0005942409021342243,
      "note": ""
@@ -165,14 +165,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 3.660650229999192e-05,
+     "seconds": 3.755747049999627e-05,
      "value": "4.074708",
      "error": -0.001273234749705023,
      "note": "closed-form binomial sum, O(n)"
     },
     {
      "library": "QuantLib",
-     "seconds": 0.000830348350000122,
+     "seconds": 0.0007563629579999542,
      "value": "4.074719",
      "error": -0.001261849874045919,
      "note": "backward induction, O(n^2)"
@@ -187,28 +187,28 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 1.1919845750003332e-07,
+     "seconds": 1.1381240950004212e-07,
      "value": "0.06680720127",
      "error": 9.04308944500116e-15,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 4.5921630599991657e-07,
+     "seconds": 4.4809451200035257e-07,
      "value": "0.06680720127",
      "error": 1.27513161859702e-07,
      "note": ""
     },
     {
      "library": "SciPy (special.ndtr)",
-     "seconds": 1.2016904749998503e-07,
+     "seconds": 1.2290796950014738e-07,
      "value": "0.06680720127",
      "error": 9.464247761860114e-15,
      "note": ""
     },
     {
      "library": "SciPy (stats.norm.cdf)",
-     "seconds": 3.615187340001285e-05,
+     "seconds": 4.065199460001168e-05,
      "value": "0.06680720127",
      "error": 9.464247761860114e-15,
      "note": ""
@@ -223,28 +223,28 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 1.562652210000124e-07,
+     "seconds": 1.5710089999993216e-07,
      "value": "-1.644853627",
      "error": 3.1451708496367178e-15,
      "note": "statistics.NormalDist (Wichura AS241)"
     },
     {
      "library": "QuantLib",
-     "seconds": 4.5667145800007345e-07,
+     "seconds": 4.323979380005767e-07,
      "value": "-1.644853625",
      "error": 5.6212647862453525e-09,
      "note": ""
     },
     {
      "library": "SciPy (special.ndtri)",
-     "seconds": 1.449359819999927e-07,
+     "seconds": 1.3851546299997608e-07,
      "value": "-1.644853627",
      "error": 1.1789961616390999e-15,
      "note": ""
     },
     {
      "library": "SciPy (stats.norm.ppf)",
-     "seconds": 4.9777383799983e-05,
+     "seconds": 5.400360940002429e-05,
      "value": "-1.644853627",
      "error": 1.1789961616390999e-15,
      "note": ""
@@ -259,28 +259,28 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 1.8997027599999683e-06,
+     "seconds": 1.922760100001142e-06,
      "value": "93.49603177",
      "error": -3.67923237346327e-15,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 6.546586579997893e-06,
+     "seconds": 6.387374879996059e-06,
      "value": "93.49603177",
      "error": 2.236944430697688e-13,
      "note": ""
     },
     {
      "library": "numpy-financial (pv)",
-     "seconds": 8.626746459999595e-06,
+     "seconds": 9.177430459994866e-06,
      "value": "93.49603177",
      "error": 1.0531622341738735e-14,
      "note": "annuity closed form"
     },
     {
      "library": "numpy-financial (npv)",
-     "seconds": 4.876550419999148e-06,
+     "seconds": 4.850310739993802e-06,
      "value": "93.49603177",
      "error": 8.158589591774876e-14,
      "note": ""
@@ -295,42 +295,42 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 3.707012960001066e-05,
+     "seconds": 3.450065269998959e-05,
      "value": "0.09",
      "error": 7.96469566093931e-18,
      "note": "Brent, tolerance 1e-12"
     },
     {
      "library": "QuantLib",
-     "seconds": 8.055282400000578e-05,
+     "seconds": 7.967074319994935e-05,
      "value": "0.09",
      "error": 3.6878717866411517e-16,
      "note": "bondYield, default accuracy 1e-10"
     },
     {
      "library": "QuantLib (1e-12)",
-     "seconds": 8.068634580004072e-05,
+     "seconds": 8.402755100005378e-05,
      "value": "0.09",
      "error": 3.6878717866411517e-16,
      "note": ""
     },
     {
      "library": "numpy-financial",
-     "seconds": 8.982423899997229e-05,
+     "seconds": 9.589206050009125e-05,
      "value": "0.09",
      "error": 1.1872804672298034e-12,
      "note": "rate (Newton), default tol 1e-6"
     },
     {
      "library": "numpy-financial (tol 1e-12)",
-     "seconds": 0.00010282810399996833,
+     "seconds": 0.00011553618499988261,
      "value": "0.09",
      "error": 7.96469566093931e-18,
      "note": ""
     },
     {
      "library": "SciPy",
-     "seconds": 0.00013025624900001276,
+     "seconds": 0.0001318045789998905,
      "value": "0.09",
      "error": 3.5720271276568224e-17,
      "note": "brentq (xtol 1e-12) on numpy-financial's pv"
@@ -345,14 +345,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 9.963107149997086e-06,
+     "seconds": 9.88437599999088e-06,
      "value": "6.954496, 6.655020, 58.3185",
      "error": 5.182591986429436e-16,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 2.2163232299999435e-05,
+     "seconds": 2.183368649998556e-05,
      "value": "6.954496, 6.655020, 58.3185",
      "error": 2.7747185589618377e-16,
      "note": ""
@@ -367,14 +367,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 6.483319720000509e-05,
+     "seconds": 2.1865046900029482e-05,
      "value": "2.049724, 103.544528",
      "error": 3.4536419380820556e-14,
      "note": ""
     },
     {
      "library": "QuantLib",
-     "seconds": 8.778243019996807e-06,
+     "seconds": 8.794417019998946e-06,
      "value": "2.049724, 103.544528",
      "error": 1.2178298248640148e-13,
      "note": "ActualActual(ISMA) with the coupon schedule"
@@ -389,14 +389,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 1.4030437650001205e-05,
+     "seconds": 1.3453541049989326e-05,
      "value": "d30 = 0.23170542",
      "error": 2.220446049250313e-16,
      "note": "one linear solve per maturity"
     },
     {
      "library": "QuantLib",
-     "seconds": 0.0012964833149999321,
+     "seconds": 0.0012905326400004923,
      "value": "d30 = 0.23170542",
      "error": 1.609823385706477e-15,
      "note": "PiecewiseLogLinearDiscount on FixedRateBondHelper"
@@ -411,21 +411,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 2.0207478699990134e-05,
+     "seconds": 2.1175950899987582e-05,
      "value": "0.1253528785",
      "error": -5.414424556415086e-19,
      "note": "Brent on [-0.99, 1], tolerance 1e-12"
     },
     {
      "library": "numpy-financial",
-     "seconds": 5.569709100000182e-05,
+     "seconds": 5.93771196000489e-05,
      "value": "0.1253528785",
      "error": 1.9423488506383824e-15,
      "note": "eigenvalues of the companion matrix"
     },
     {
      "library": "SciPy",
-     "seconds": 7.820834899998772e-05,
+     "seconds": 7.74775136000244e-05,
      "value": "0.1253528785",
      "error": 1.759649349785309e-14,
      "note": "brentq on numpy-financial's npv"
@@ -440,14 +440,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 5.7279815199990484e-05,
+     "seconds": 6.133100500001092e-05,
      "value": "Sharpe 1.9524663930",
      "error": 0.0,
      "note": ""
     },
     {
      "library": "PyPortfolioOpt",
-     "seconds": 0.006112334179997561,
+     "seconds": 0.006390184879992375,
      "value": "Sharpe 1.9524663930",
      "error": -6.661338147750939e-16,
      "note": "max_sharpe through cvxpy (Clarabel)"
@@ -462,21 +462,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.0037634002999993752,
+     "seconds": 0.003926788700000543,
      "value": "Sharpe 1.7440267828",
      "error": 2.220446049250313e-16,
      "note": "one QP: min z'Sz, (mu - rf)'z = 1, z >= 0"
     },
     {
      "library": "PyPortfolioOpt",
-     "seconds": 0.006516081380000287,
+     "seconds": 0.006682820500000162,
      "value": "Sharpe 1.7440267828",
      "error": 0.0,
      "note": "max_sharpe (same transformation, cvxpy)"
     },
     {
      "library": "SciPy",
-     "seconds": 0.0033808386100008646,
+     "seconds": 0.003862740979998307,
      "value": "Sharpe 1.7440267828",
      "error": 0.0,
      "note": "SLSQP on -Sharpe, analytic gradient"
@@ -491,21 +491,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.0009277614950008228,
+     "seconds": 0.0009957984449988544,
      "value": "objective 0.034653192785",
      "error": 0.0,
      "note": "FISTA with adaptive restart"
     },
     {
      "library": "PyPortfolioOpt",
-     "seconds": 0.006374346899997363,
+     "seconds": 0.006374752179999632,
      "value": "objective 0.034653192785",
      "error": 6.938893903907228e-18,
      "note": "max_quadratic_utility, risk aversion 2 / tau"
     },
     {
      "library": "SciPy",
-     "seconds": 0.00325163454000176,
+     "seconds": 0.0037087503200018547,
      "value": "objective 0.034653192785",
      "error": 5.551115123125783e-17,
      "note": "SLSQP, analytic gradient"
@@ -520,21 +520,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.010878901199998837,
+     "seconds": 0.012266290200000186,
      "value": "Sharpe 6.9170570715",
      "error": 0.0,
      "note": "one QP: min z'Sz, (mu - rf)'z = 1, z >= 0"
     },
     {
      "library": "PyPortfolioOpt",
-     "seconds": 0.023734187899981406,
+     "seconds": 0.023359249899976932,
      "value": "Sharpe 6.9170570715",
      "error": 8.881784197001252e-16,
      "note": "max_sharpe (same transformation, cvxpy)"
     },
     {
      "library": "SciPy",
-     "seconds": 0.25307034399997974,
+     "seconds": 0.251347375000023,
      "value": "Sharpe 6.9170570713",
      "error": 2.1662049931592264e-10,
      "note": "SLSQP on -Sharpe, analytic gradient"
@@ -549,21 +549,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.0022838123700012146,
+     "seconds": 0.002622558329999265,
      "value": "objective 0.043435898396",
      "error": 0.0,
      "note": "FISTA with adaptive restart"
     },
     {
      "library": "PyPortfolioOpt",
-     "seconds": 0.009573748100001467,
+     "seconds": 0.010330118950014367,
      "value": "objective 0.043435898396",
      "error": 2.0816681711721685e-17,
      "note": "max_quadratic_utility, risk aversion 2 / tau"
     },
     {
      "library": "SciPy",
-     "seconds": 0.09687492850002855,
+     "seconds": 0.09579177149998941,
      "value": "objective 0.043435898396",
      "error": 1.8735013540549517e-15,
      "note": "SLSQP, analytic gradient"
@@ -578,14 +578,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 4.125640800002657e-06,
+     "seconds": 4.7121704799974394e-06,
      "value": "first 0.08701142",
      "error": 3.164047537681085e-17,
      "note": ""
     },
     {
      "library": "PyPortfolioOpt",
-     "seconds": 0.00026242501499996253,
+     "seconds": 0.00024046189000000596,
      "value": "first 0.08701142",
      "error": 2.3870675854446972e-17,
      "note": "market_implied_prior_returns, delta = premium / var(market)"
@@ -600,21 +600,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.0008719013399991126,
+     "seconds": 0.000934260379999614,
      "value": "tracking var 2.6960368037e-05",
      "error": 0.0,
      "note": "FISTA with adaptive restart"
     },
     {
      "library": "cvxpy",
-     "seconds": 0.005749958500000502,
+     "seconds": 0.005781266539997887,
      "value": "tracking var 2.6960368037e-05",
      "error": 3.3881317890172014e-21,
      "note": "sum_squares QP, Clarabel"
     },
     {
      "library": "SciPy",
-     "seconds": 0.0007622478339999361,
+     "seconds": 0.0007304241599995294,
      "value": "tracking var 2.6960368037e-05",
      "error": 4.279210449528725e-18,
      "note": "SLSQP, analytic gradient"
@@ -629,28 +629,28 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 7.487988440002483e-05,
+     "seconds": 7.685030299999198e-05,
      "value": "beta 1.4533491488",
      "error": 6.488863841957935e-17,
      "note": ""
     },
     {
      "library": "statsmodels",
-     "seconds": 0.00012415940149992366,
+     "seconds": 0.00012392173600005662,
      "value": "beta 1.4533491488",
      "error": 6.012451763555145e-16,
      "note": "OLS(...).fit(), all statistics"
     },
     {
      "library": "SciPy",
-     "seconds": 0.00040555927399987015,
+     "seconds": 0.0004257098380003299,
      "value": "beta 1.4533491488",
      "error": 2.8693324334461066e-16,
      "note": "stats.linregress"
     },
     {
      "library": "NumPy",
-     "seconds": 2.4908273699998063e-05,
+     "seconds": 2.7061027199943057e-05,
      "value": "beta 1.4533491488",
      "error": 8.232897812805458e-16,
      "note": "polyfit, degree 1"
@@ -665,14 +665,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.00010360307550001835,
+     "seconds": 0.00011857854649997535,
      "value": "timing 1.975822, t 5.033555",
      "error": 5.177791130039067e-16,
      "note": ""
     },
     {
      "library": "statsmodels",
-     "seconds": 0.00017261212099992917,
+     "seconds": 0.0001905892464999397,
      "value": "timing 1.975822, t 5.033555",
      "error": 4.733548052698361e-16,
      "note": ""
@@ -687,14 +687,14 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 9.596904539998832e-05,
+     "seconds": 9.42215576000308e-05,
      "value": "-1.155307993",
      "error": 4.972864862097081e-16,
      "note": ""
     },
     {
      "library": "statsmodels",
-     "seconds": 9.769565960000364e-05,
+     "seconds": 0.00010594475750008314,
      "value": "-1.155307993",
      "error": 4.972864862097081e-16,
      "note": "runstest_1samp(cutoff=0, no continuity correction)"
@@ -709,21 +709,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.0008729171939999105,
+     "seconds": 0.00025096515499990345,
      "value": "1.027713529",
-     "error": -3.8692484995655146e-16,
+     "error": 5.716435989351113e-17,
      "note": ""
     },
     {
      "library": "arch",
-     "seconds": 0.00036599481400003244,
+     "seconds": 0.0004070694629999707,
      "value": "1.024633441",
      "error": -0.0030800881916911976,
      "note": "Lo-MacKinlay: drift from end points, divides by n"
     },
     {
      "library": "arch (debiased)",
-     "seconds": 0.0003848677600001338,
+     "seconds": 0.0004018615119994138,
      "value": "1.030812122",
      "error": 0.003098593478380986,
      "note": "Lo-MacKinlay with the bias correction"
@@ -738,21 +738,21 @@
    "results": [
     {
      "library": "investm",
-     "seconds": 0.00029155233400001633,
+     "seconds": 8.26847519999319e-05,
      "value": "0.100330855",
      "error": -1.1218631719183256e-17,
      "note": ""
     },
     {
      "library": "statsmodels",
-     "seconds": 6.225841160003255e-05,
+     "seconds": 6.37475108000217e-05,
      "value": "0.100330855",
      "error": -2.5096419526997714e-17,
      "note": ""
     },
     {
      "library": "pandas",
-     "seconds": 0.0001617847405000248,
+     "seconds": 0.00018856468549984128,
      "value": "0.1005688623",
      "error": 0.00023800731543510966,
      "note": "Pearson correlation of x[1:] and x[:-1], a different estimator"

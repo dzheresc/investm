@@ -42,6 +42,36 @@ TEST(FixedIncomeTest, CouponPeriodAndAccrued) {
   EXPECT_NEAR(AccruedInterest(b, D(2026, 5, 15)), 0.0, 1e-15);
 }
 
+// The direct jump to the coupon period must agree with walking back from
+// maturity one period at a time, on every settlement day of several years,
+// for month-end maturities (where AddMonths clamps) and each frequency.
+TEST(FixedIncomeTest, SurroundingCouponsMatchesWalkingBack) {
+  for (const Date maturity :
+       {D(2031, 8, 31), D(2030, 11, 15), D(2032, 2, 29)}) {
+    for (int frequency : {1, 2, 4, 12}) {
+      const Bond bond{100.0, 0.05, maturity, frequency,
+                      DayCount::kActualActual};
+      const int step = 12 / frequency;
+      for (std::chrono::sys_days d = std::chrono::sys_days(D(2026, 1, 1));
+           Date(d) < maturity; d += std::chrono::days(3)) {
+        const Date settle(d);
+        int k = 0;
+        Date next = maturity;
+        Date previous = AddMonths(maturity, -step);
+        while (previous > settle) {
+          ++k;
+          next = previous;
+          previous = AddMonths(maturity, -step * (k + 1));
+        }
+        const CouponPeriod p = SurroundingCoupons(bond, settle);
+        ASSERT_EQ(p.previous, previous);
+        ASSERT_EQ(p.next, next);
+        ASSERT_EQ(p.remaining, k + 1);
+      }
+    }
+  }
+}
+
 TEST(FixedIncomeTest, PricesOnCouponDateMatchCashFlowValuation) {
   const Bond b = Note();
   const Date settle = D(2026, 11, 15);

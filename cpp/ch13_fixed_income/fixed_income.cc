@@ -1,5 +1,6 @@
 #include "cpp/ch13_fixed_income/fixed_income.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -50,15 +51,19 @@ Date AddMonths(Date d, int months) {
 CouponPeriod SurroundingCoupons(const Bond& bond, Date settlement) {
   INVESTM_CHECK(settlement < bond.maturity, "bond has matured");
   const int step = MonthsPerPeriod(bond.frequency);
-  int k = 0;
-  Date next = bond.maturity;
-  Date previous = AddMonths(bond.maturity, -step);
-  while (previous > settlement) {
-    ++k;
-    next = previous;
-    previous = AddMonths(bond.maturity, -step * (k + 1));
-  }
-  return {previous, next, k + 1};
+  // k is the smallest count with AddMonths(maturity, -step * (k + 1)) <=
+  // settlement. Start one period short of the whole months to maturity and
+  // correct by a step or two, instead of walking back from maturity.
+  const int months_left =
+      12 * (static_cast<int>(bond.maturity.year()) -
+            static_cast<int>(settlement.year())) +
+      static_cast<int>(static_cast<unsigned>(bond.maturity.month())) -
+      static_cast<int>(static_cast<unsigned>(settlement.month()));
+  int k = std::max(0, months_left / step - 1);
+  while (k > 0 && AddMonths(bond.maturity, -step * k) <= settlement) --k;
+  while (AddMonths(bond.maturity, -step * (k + 1)) > settlement) ++k;
+  return {AddMonths(bond.maturity, -step * (k + 1)),
+          AddMonths(bond.maturity, -step * k), k + 1};
 }
 
 double AccruedInterest(const Bond& bond, Date settlement) {

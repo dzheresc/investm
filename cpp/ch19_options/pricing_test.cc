@@ -156,6 +156,41 @@ TEST(VolatilityTest, ImpliedAndHistorical) {
               0.01 * std::sqrt(10.0 / 9.0) * std::sqrt(252.0), 1e-12);
 }
 
+// Newton with a bracket must recover the volatility over a wide grid of
+// moneyness, maturity, volatility, dividends and both option types.
+TEST(VolatilityTest, ImpliedRoundTripOverGrid) {
+  for (OptionType type : {OptionType::kCall, OptionType::kPut}) {
+    for (double strike : {40.0, 70.0, 95.0, 100.0, 105.0, 140.0, 250.0}) {
+      for (double years : {0.02, 0.25, 1.0, 5.0, 30.0}) {
+        for (double vol : {0.03, 0.1, 0.25, 0.6, 1.5}) {
+          for (double q : {0.0, 0.03}) {
+            OptionSpec s{type, 100.0, strike, 0.04, vol, years, q};
+            const double price = BlackScholesPrice(s);
+            s.volatility = 0.2;
+            const auto implied = ImpliedVolatility(s, price);
+            s.volatility = vol;
+            // Deep out of the money the price carries no information about
+            // volatility at double precision; skip those cases.
+            if (BlackScholesGreeks(s).vega < 1e-6) continue;
+            ASSERT_TRUE(implied.has_value())
+                << "K " << strike << " T " << years << " vol " << vol;
+            EXPECT_NEAR(*implied, vol, 1e-9 * std::max(1.0, 1e-3 / s.years))
+                << "K " << strike << " T " << years << " vol " << vol;
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST(BlackScholesTest, PriceMatchesGreeksPrice) {
+  for (OptionType type : {OptionType::kCall, OptionType::kPut}) {
+    OptionSpec s = Spec(type);
+    s.dividend_yield = 0.02;
+    EXPECT_NEAR(BlackScholesPrice(s), BlackScholesGreeks(s).price, 1e-13);
+  }
+}
+
 TEST(WarrantTest, DilutionDiscount) {
   const OptionSpec s = Spec(OptionType::kCall);
   EXPECT_NEAR(WarrantValue(s, 1e6, 0.0), BlackScholesPrice(s), 1e-12);
