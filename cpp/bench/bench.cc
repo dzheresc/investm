@@ -10,7 +10,8 @@
 #include <string>
 #include <vector>
 
-// Under callgrind, --quick dumps a profile per case (see scripts/profile.sh).
+// Under callgrind, --quick dumps a profile per case unless --no-dumps is given
+// (see scripts/profile.sh).
 // The client requests are no-ops outside valgrind; without the header
 // (e.g. MSVC) they compile away.
 #if defined(__has_include)
@@ -65,6 +66,8 @@ Options ParseOptions(int argc, char** argv) {
     const char* a = argv[i];
     if (std::strcmp(a, "--quick") == 0) {
       o.quick = true;
+    } else if (std::strcmp(a, "--no-dumps") == 0) {
+      o.callgrind_dumps = false;
     } else if (std::strncmp(a, "--filter=", 9) == 0) {
       o.filter = a + 9;
     } else if (std::strncmp(a, "--min_time=", 11) == 0) {
@@ -75,7 +78,7 @@ Options ParseOptions(int argc, char** argv) {
       o.csv_path = a + 6;
     } else {
       std::fprintf(stderr,
-                   "usage: %s [--quick] [--filter=substr] [--min_time=s] "
+                   "usage: %s [--quick] [--no-dumps] [--filter=substr] "
                    "[--repetitions=n] [--csv=path]\n",
                    argv[0]);
       std::exit(2);
@@ -102,9 +105,9 @@ int RunAll(const std::vector<Case>& cases, const Options& options) {
       continue;
     }
     if (options.quick) {
-      DumpCallgrindStats("before " + c.name);
+      if (options.callgrind_dumps) DumpCallgrindStats("before " + c.name);
       c.body();
-      DumpCallgrindStats(c.name);
+      if (options.callgrind_dumps) DumpCallgrindStats(c.name);
       std::printf("%-44s %13s %13s %10d\n", c.name.c_str(), "-", "-", 1);
       continue;
     }

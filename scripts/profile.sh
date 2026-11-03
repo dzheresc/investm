@@ -63,7 +63,7 @@ run_memcheck() {
 run_callgrind() {
   echo "== callgrind: instruction counts per function"
   valgrind --tool=callgrind --callgrind-out-file="$OUT/callgrind.out" \
-    "$BENCH" "${BENCH_ARGS[@]}" >/dev/null 2>"$OUT/callgrind.log"
+    "$BENCH" "${BENCH_ARGS[@]}" --no-dumps >/dev/null 2>"$OUT/callgrind.log"
   callgrind_annotate --inclusive=yes "$OUT/callgrind.out" \
     >"$OUT/callgrind.inclusive.txt"
   callgrind_annotate "$OUT/callgrind.out" >"$OUT/callgrind.self.txt"

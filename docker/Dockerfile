@@ -12,11 +12,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libgtest-dev libgmock-dev \
       clang-format clang-tidy \
       valgrind kcachegrind-converters linux-tools-generic \
-      libquantlib0-dev libbenchmark-dev \
+      libquantlib0-dev libbenchmark-dev pkg-config \
       python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv /opt/venv \
+# numpy-financial 1.1.0 needs Python 3.13; Ubuntu 24.04 ships 3.12. The venv
+# below comes first on PATH, so python3 is 3.13 everywhere, as in CI's compare
+# job.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      software-properties-common \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt-get install -y --no-install-recommends python3.13 python3.13-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3.13 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir numpy pytest pylint yapf cpplint
 COPY scripts/compare/requirements.txt /tmp/compare-requirements.txt
 RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/compare-requirements.txt
