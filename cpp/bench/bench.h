@@ -27,8 +27,9 @@ struct Options {
   double min_time = 0.2;  // Seconds per timed batch.
   int repetitions = 5;
   bool quick = false;
-  std::string filter;    // Substring; empty runs everything.
-  std::string csv_path;  // Optional machine-readable output.
+  bool callgrind_dumps = true;  // In --quick mode, one dump per case.
+  std::string filter;           // Substring; empty runs everything.
+  std::string csv_path;         // Optional machine-readable output.
 };
 
 Options ParseOptions(int argc, char** argv);

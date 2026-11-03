@@ -7,6 +7,7 @@
 #
 # The checkout is expected at <Develop>\investm (default C:\develop\investm).
 # Reports land in <Develop>\investm\build\profile\reports.
+[CmdletBinding(PositionalBinding = $false)]
 param(
   [string]$Develop = "C:\develop",
   [Parameter(ValueFromRemainingArguments = $true)][string[]]$Tools

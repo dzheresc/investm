@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libgtest-dev libgmock-dev \
       clang-format clang-tidy \
       valgrind kcachegrind-converters linux-tools-generic \
-      libquantlib0-dev libbenchmark-dev \
+      libquantlib0-dev libbenchmark-dev pkg-config \
       python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
