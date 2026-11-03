@@ -28,8 +28,8 @@ double HistoricalExpectedShortfall(std::span<const double> returns,
 double NormalVaR(double mean, double std_dev, double alpha);
 double NormalExpectedShortfall(double mean, double std_dev, double alpha);
 
-// Inverse of the standard normal CDF (Acklam's rational approximation
-// refined by one Newton step).
+// Inverse of the standard normal CDF (Wichura's AS241, accurate to about
+// 1e-16; the same algorithm as Python's statistics.NormalDist).
 double NormInv(double p);
 
 }  // namespace investm::ch06

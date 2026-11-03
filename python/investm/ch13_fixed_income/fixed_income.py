@@ -71,14 +71,18 @@ def surrounding_coupons(bond: Bond, settlement: Date) -> CouponPeriod:
     if settlement >= bond.maturity:
         raise ValueError("bond has matured")
     step = _step(bond.frequency)
-    k = 0
-    nxt = bond.maturity
-    prev = add_months(bond.maturity, -step)
-    while prev > settlement:
+    # k is the smallest count with add_months(maturity, -step (k + 1)) <=
+    # settlement. Start one period short of the whole months to maturity and
+    # correct by a step or two, instead of walking back from maturity.
+    months_left = (12 * (bond.maturity.year - settlement.year) +
+                   bond.maturity.month - settlement.month)
+    k = max(0, months_left // step - 1)
+    while k > 0 and add_months(bond.maturity, -step * k) <= settlement:
+        k -= 1
+    while add_months(bond.maturity, -step * (k + 1)) > settlement:
         k += 1
-        nxt = prev
-        prev = add_months(bond.maturity, -step * (k + 1))
-    return CouponPeriod(prev, nxt, k + 1)
+    return CouponPeriod(add_months(bond.maturity, -step * (k + 1)),
+                        add_months(bond.maturity, -step * k), k + 1)
 
 
 def _period_days(bond: Bond, p: CouponPeriod) -> float:

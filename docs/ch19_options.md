@@ -16,4 +16,4 @@ Code: [`cpp/ch19_options`](../cpp/ch19_options) and [`python/investm/ch19_option
 
 - The binomial tree uses the Cox-Ross-Rubinstein parameterization u = e^{σ√Δt}, d = 1/u. Tests check convergence to Black-Scholes, and that early exercise of an American call on a non-dividend stock adds nothing.
 - Every analytic Greek is checked against a central finite difference. Theta is per year and vega per unit of volatility. Divide by 365 or 100 for "per day" or "per vol point" quotes.
-- `ImpliedVolatility` first checks the no-arbitrage range, then solves with Brent's method on an expanding bracket.
+- `ImpliedVolatility` first checks the no-arbitrage range, then runs Newton's method on vega from the inflection point of the price in volatility, inside a bracket that narrows with each step; Brent's method on that bracket is the fallback.

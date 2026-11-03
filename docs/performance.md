@@ -5,7 +5,9 @@ whole companion. [Round 2](#round-2-callgrind-and-cachegrind-across-all-chapters
 is the newer one. The tools live in the repository, so the round can be
 repeated after any change.
 [Comparison results](comparison.md) times the same kinds of kernels against
-QuantLib and other open-source libraries.
+QuantLib and other open-source libraries; its
+[Gaps closed](comparison.md#gaps-closed) section is the third round of
+fixes, for the cases where another library was faster.
 
 | Tool | What it does |
 |---|---|

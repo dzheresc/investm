@@ -305,7 +305,7 @@ def implied_vol_case() -> Case:
         },
         lambda x: float(mp.mpf(x) - ref),
         notes={
-            INVESTM: "Brent, tolerance 1e-12",
+            INVESTM: "Newton on vega inside a bracket",
             QUANTLIB: "blackFormulaImpliedStdDev, default accuracy",
             VOLLIB: "Let's Be Rational",
         })

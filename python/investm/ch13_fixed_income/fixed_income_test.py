@@ -1,5 +1,6 @@
 """Tests for investm.ch13_fixed_income."""
 
+import datetime
 import unittest
 
 from investm.ch05_riskless_securities import cash_flows as cf
@@ -30,6 +31,25 @@ class FixedIncomeTest(unittest.TestCase):
                          (D(2026, 5, 15), D(2026, 11, 15), 9))
         self.assertAlmostEqual(fi.accrued_interest(NOTE, D(2026, 11, 3)),
                                2.5 * 172 / 184)
+
+    def test_surrounding_coupons_matches_walking_back(self):
+        """The direct jump agrees with stepping back from maturity."""
+        for maturity in (D(2031, 8, 31), D(2030, 11, 15), D(2032, 2, 29)):
+            for freq in (1, 2, 4, 12):
+                bond = fi.Bond(100.0, 0.05, maturity, freq)
+                step = 12 // freq
+                settle = D(2026, 1, 1)
+                while settle < maturity:
+                    k = 0
+                    nxt = maturity
+                    prev = fi.add_months(maturity, -step)
+                    while prev > settle:
+                        k += 1
+                        nxt = prev
+                        prev = fi.add_months(maturity, -step * (k + 1))
+                    self.assertEqual(fi.surrounding_coupons(bond, settle),
+                                     fi.CouponPeriod(prev, nxt, k + 1))
+                    settle += datetime.timedelta(days=3)
 
     def test_coupon_date_matches_cash_flows(self):
         flows = cf.coupon_bond(100.0, 0.05, 4.0, 2)

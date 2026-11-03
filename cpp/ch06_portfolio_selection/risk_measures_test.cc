@@ -30,5 +30,22 @@ TEST(RiskMeasuresTest, NormalQuantilesAndVaR) {
   EXPECT_GT(NormalExpectedShortfall(0.0, 0.1, 0.95), NormalVaR(0.0, 0.1, 0.95));
 }
 
+// AS241 must hold full precision in both tails and the central region with
+// no refinement. In the tail a relative error e in z moves N(z) by about
+// z^2 e relatively, so the round trip is checked to 4e-15 (1 + z^2).
+TEST(RiskMeasuresTest, NormInvIsAccurateAcrossTheRange) {
+  for (double p = 1e-300; p < 0.5; p *= 1.7) {
+    const double z = NormInv(p);
+    EXPECT_NEAR(stats::NormCdf(z) / p, 1.0, 4e-15 * (1.0 + z * z))
+        << "p = " << p;
+  }
+  for (int i = 1; i < 1000; ++i) {
+    const double p = i / 1000.0;
+    EXPECT_NEAR(stats::NormCdf(NormInv(p)), p, 4e-16) << "p = " << p;
+  }
+  EXPECT_EQ(NormInv(0.5), 0.0);
+  EXPECT_DOUBLE_EQ(NormInv(0.975), -NormInv(0.025));
+}
+
 }  // namespace
 }  // namespace investm::ch06

@@ -165,23 +165,76 @@ Greeks BlackScholesGreeks(const OptionSpec& spec) {
   return g;
 }
 
+namespace {
+
+// Black-Scholes price as a function of volatility, with the discounted
+// spot and strike computed once (the implied-volatility search calls it
+// many times on the same option).
+struct BsmByVolatility {
+  explicit BsmByVolatility(const OptionSpec& spec)
+      : call(spec.type == OptionType::kCall),
+        spot_pv(spec.spot * std::exp(-spec.dividend_yield * spec.years)),
+        strike_pv(spec.strike * std::exp(-spec.rate * spec.years)),
+        log_moneyness(std::log(spot_pv / strike_pv)),
+        sqrt_t(std::sqrt(spec.years)) {}
+
+  double Price(double vol) const {
+    const double sd = vol * sqrt_t;
+    const double d1 = log_moneyness / sd + 0.5 * sd;
+    const double d2 = d1 - sd;
+    return call ? spot_pv * stats::NormCdf(d1) - strike_pv * stats::NormCdf(d2)
+                : strike_pv * stats::NormCdf(-d2) -
+                      spot_pv * stats::NormCdf(-d1);
+  }
+  double Vega(double vol) const {
+    const double sd = vol * sqrt_t;
+    return spot_pv * stats::NormPdf(log_moneyness / sd + 0.5 * sd) * sqrt_t;
+  }
+
+  bool call;
+  double spot_pv;
+  double strike_pv;
+  double log_moneyness;
+  double sqrt_t;
+};
+
+}  // namespace
+
 double BlackScholesPrice(const OptionSpec& spec) {
-  return BlackScholesGreeks(spec).price;
+  CheckSpec(spec);
+  return BsmByVolatility(spec).Price(spec.volatility);
 }
 
 std::optional<double> ImpliedVolatility(OptionSpec spec, double price) {
-  auto f = [&](double vol) {
-    spec.volatility = vol;
-    return BlackScholesPrice(spec) - price;
-  };
-  spec.volatility = 1e-6;
-  const double lower = BlackScholesPrice(spec);
-  const double upper =
-      spec.type == OptionType::kCall
-          ? spec.spot * std::exp(-spec.dividend_yield * spec.years)
-          : spec.strike * std::exp(-spec.rate * spec.years);
+  CheckSpec(spec);
+  const BsmByVolatility bsm(spec);
+  const double lower = bsm.Price(1e-6);
+  const double upper = bsm.call ? bsm.spot_pv : bsm.strike_pv;
   if (price <= lower || price >= upper) return std::nullopt;
-  return BrentExpandUp(f, 1e-6, 1.0);
+  // Newton from the volatility at which vega peaks (the price is convex in
+  // volatility below it and concave above, so the iterates approach the
+  // root from one side). A bracket is kept and narrowed as Newton goes;
+  // a step that leaves it, or no convergence, falls back to Brent.
+  double lo = 1e-6;
+  double hi = std::numeric_limits<double>::infinity();
+  double vol =
+      std::max(std::sqrt(2.0 * std::fabs(bsm.log_moneyness)) / bsm.sqrt_t, 0.1);
+  for (int i = 0; i < 50; ++i) {
+    const double diff = bsm.Price(vol) - price;
+    if (diff > 0.0) {
+      hi = vol;
+    } else {
+      lo = vol;
+    }
+    const double vega = bsm.Vega(vol);
+    const double next = vega > 0.0 ? vol - diff / vega : -1.0;
+    if (!(next > lo && next < hi)) break;
+    if (std::fabs(next - vol) <= 1e-15 * vol) return next;
+    vol = next;
+  }
+  auto f = [&](double v) { return bsm.Price(v) - price; };
+  return std::isfinite(hi) ? Brent(f, lo, hi)
+                           : BrentExpandUp(f, lo, std::max(2.0 * lo, 1.0));
 }
 
 double HistoricalVolatility(std::span<const double> prices,

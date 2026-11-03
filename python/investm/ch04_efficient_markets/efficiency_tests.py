@@ -51,15 +51,15 @@ def variance_ratio(log_rets: Sequence[float], q: int) -> float:
     """VR(q) from overlapping q-period sums; about 1 under a random walk."""
     if q < 2 or len(log_rets) <= q:
         raise ValueError("invalid horizon q")
-    sums = []
-    window = 0.0
-    for t, r in enumerate(log_rets):
-        window += r
-        if t >= q:
-            window -= log_rets[t - q]
-        if t + 1 >= q:
-            sums.append(window)
-    return stats.variance(sums) / (q * stats.variance(log_rets))
+    # Overlapping q-period sums from a running window: add the newest
+    # return, drop the one q periods back.
+    r = [float(v) for v in log_rets]
+    window = math.fsum(r[:q])
+    sums = [window]
+    for new, old in zip(r[q:], r):
+        window += new - old
+        sums.append(window)
+    return stats.variance(sums) / (q * stats.variance(r))
 
 
 def filter_rule_return(prices: Sequence[float], x: float) -> float:

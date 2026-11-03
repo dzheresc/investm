@@ -2,6 +2,7 @@
 
 import dataclasses
 import math
+import operator
 from typing import Sequence
 
 
@@ -23,11 +24,18 @@ def covariance(x: Sequence[float], y: Sequence[float], ddof: int = 1) -> float:
     if n - ddof <= 0:
         raise ValueError("too few observations")
     mx, my = mean(x), mean(y)
-    return math.fsum((a - mx) * (b - my) for a, b in zip(x, y)) / (n - ddof)
+    dx = [a - mx for a in x]
+    dy = [b - my for b in y]
+    return math.fsum(map(operator.mul, dx, dy)) / (n - ddof)
 
 
 def variance(x: Sequence[float], ddof: int = 1) -> float:
-    return covariance(x, x, ddof)
+    n = len(x)
+    if n - ddof <= 0:
+        raise ValueError("too few observations")
+    m = mean(x)
+    d = [a - m for a in x]
+    return math.fsum(map(operator.mul, d, d)) / (n - ddof)
 
 
 def std_dev(x: Sequence[float], ddof: int = 1) -> float:
@@ -57,9 +65,11 @@ def autocorrelation(x: Sequence[float], lag: int) -> float:
     """Lag-k sample autocorrelation."""
     if lag >= len(x):
         raise ValueError("lag too large")
+    x = [float(v) for v in x]  # Plain floats: NumPy scalars are slow here.
     m = mean(x)
-    den = math.fsum((v - m)**2 for v in x)
-    num = math.fsum((x[t] - m) * (x[t - lag] - m) for t in range(lag, len(x)))
+    d = [v - m for v in x]
+    den = math.fsum(map(operator.mul, d, d))
+    num = math.fsum(map(operator.mul, d[lag:], d[:len(d) - lag]))
     return num / den
 
 

@@ -1,6 +1,7 @@
 """Tests for investm.ch19_options."""
 
 import dataclasses
+import itertools
 import math
 import unittest
 
@@ -118,6 +119,33 @@ class PricingTest(unittest.TestCase):
         self.assertAlmostEqual(pr.implied_volatility(s, price), 0.25, 9)
         itm = dataclasses.replace(s, strike=120.0)
         self.assertIsNone(pr.implied_volatility(itm, 10.0))
+
+    def test_implied_vol_round_trip_over_grid(self):
+        grid = itertools.product(
+            (CALL, PUT), (40.0, 70.0, 95.0, 100.0, 105.0, 140.0, 250.0),
+            (0.02, 0.25, 1.0, 5.0, 30.0), (0.03, 0.1, 0.25, 0.6, 1.5),
+            (0.0, 0.03))
+        for t, strike, years, vol, q in grid:
+            spec = pr.OptionSpec(t, 100.0, strike, 0.04, vol, years, q)
+            # Deep out of the money the price says nothing about volatility
+            # at double precision.
+            if pr.black_scholes_greeks(spec).vega < 1e-6:
+                continue
+            implied = pr.implied_volatility(
+                dataclasses.replace(spec, volatility=0.2),
+                pr.black_scholes_price(spec))
+            self.assertIsNotNone(implied, spec)
+            self.assertAlmostEqual(implied,
+                                   vol,
+                                   delta=1e-9 * max(1.0, 1e-3 / years),
+                                   msg=str(spec))
+
+    def test_price_matches_greeks_price(self):
+        for t in (CALL, PUT):
+            spec = dataclasses.replace(_spec(t), dividend_yield=0.02)
+            self.assertAlmostEqual(pr.black_scholes_price(spec),
+                                   pr.black_scholes_greeks(spec).price,
+                                   delta=1e-13)
 
     def test_warrant(self):
         s = _spec(CALL)

@@ -117,23 +117,67 @@ def black_scholes_greeks(spec: OptionSpec) -> Greeks:
                   decay + r * k * dr * n2 - q * s * dq * n1, -k * t * dr * n2)
 
 
+class _BsmByVolatility:
+    """Black-Scholes price and vega as functions of volatility alone.
+
+    The discounted spot and strike are computed once, since the implied
+    volatility search evaluates the same option many times.
+    """
+
+    def __init__(self, spec: OptionSpec):
+        _check(spec)
+        self.call = spec.option_type == OptionType.CALL
+        self.spot_pv = spec.spot * math.exp(-spec.dividend_yield * spec.years)
+        self.strike_pv = spec.strike * math.exp(-spec.rate * spec.years)
+        self.log_moneyness = math.log(self.spot_pv / self.strike_pv)
+        self.sqrt_t = math.sqrt(spec.years)
+
+    def price(self, vol: float) -> float:
+        sd = vol * self.sqrt_t
+        d1 = self.log_moneyness / sd + 0.5 * sd
+        d2 = d1 - sd
+        if self.call:
+            return (self.spot_pv * stats.norm_cdf(d1) -
+                    self.strike_pv * stats.norm_cdf(d2))
+        return (self.strike_pv * stats.norm_cdf(-d2) -
+                self.spot_pv * stats.norm_cdf(-d1))
+
+    def vega(self, vol: float) -> float:
+        sd = vol * self.sqrt_t
+        return self.spot_pv * stats.norm_pdf(self.log_moneyness / sd +
+                                             0.5 * sd) * self.sqrt_t
+
+
 def black_scholes_price(spec: OptionSpec) -> float:
-    return black_scholes_greeks(spec).price
+    return _BsmByVolatility(spec).price(spec.volatility)
 
 
 def implied_volatility(spec: OptionSpec, price: float) -> Optional[float]:
-
-    def at(vol: float) -> float:
-        return black_scholes_price(dataclasses.replace(spec, volatility=vol))
-
-    lower = at(1e-6)
-    if spec.option_type == OptionType.CALL:
-        upper = spec.spot * math.exp(-spec.dividend_yield * spec.years)
-    else:
-        upper = spec.strike * math.exp(-spec.rate * spec.years)
+    """Newton from the inflection point, inside a bracket; Brent fallback."""
+    bsm = _BsmByVolatility(spec)
+    lower = bsm.price(1e-6)
+    upper = bsm.spot_pv if bsm.call else bsm.strike_pv
     if not lower < price < upper:
         return None
-    return root_find.brent_expand_up(lambda v: at(v) - price, 1e-6, 1.0)
+    lo, hi = 1e-6, math.inf
+    vol = max(math.sqrt(2.0 * abs(bsm.log_moneyness)) / bsm.sqrt_t, 0.1)
+    for _ in range(50):
+        diff = bsm.price(vol) - price
+        if diff > 0:
+            hi = vol
+        else:
+            lo = vol
+        vega = bsm.vega(vol)
+        nxt = vol - diff / vega if vega > 0 else -1.0
+        if not lo < nxt < hi:
+            break
+        if abs(nxt - vol) <= 1e-15 * vol:
+            return nxt
+        vol = nxt
+    f = lambda v: bsm.price(v) - price
+    if math.isfinite(hi):
+        return root_find.brent(f, lo, hi)
+    return root_find.brent_expand_up(f, lo, max(2.0 * lo, 1.0))
 
 
 def historical_volatility(prices: Sequence[float],
